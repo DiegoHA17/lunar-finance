@@ -1,0 +1,42 @@
+[package]
+name = "lunar"
+version = "0.1.0"
+description = "Lunar — finanzas personales conectadas con Notion"
+authors = ["Diego"]
+license = "UNLICENSED"
+repository = ""
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "lunar_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.4", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2"
+# HTTP hacia la API de Notion. TLS nativo de Windows (schannel): sin dependencias de compilación extra.
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+tokio = { version = "1", features = ["time"] }
+# Windows Credential Manager (protegido con DPAPI por el sistema).
+keyring = { version = "3.6", features = ["windows-native"] }
+log = "0.4"
+tauri-plugin-log = "2"
+
+[dev-dependencies]
+mockito = "1.7"
+tokio = { version = "1", features = ["time", "macros", "rt-multi-thread"] }
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
