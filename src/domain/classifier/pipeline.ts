@@ -25,6 +25,8 @@ export interface Proposal {
   categoryId: string | null
   source: ProposalSource | null
   confidence: 'high' | 'low' | null
+  /** Confianza numérica (0–1) que declaró el proveedor de IA. */
+  confidenceValue?: number
   /** Explicación para el usuario. */
   reason: string
   ruleId?: string
@@ -101,6 +103,7 @@ export function validateSuggestion(m: Movement, s: ProviderSuggestion, ctx: Clas
     categoryId: cat!.id,
     source: 'ai',
     confidence: high ? 'high' : 'low',
+    confidenceValue: s.confidence,
     reason: `${providerLabel}: ${s.reason.slice(0, 200)}`,
     // Las propuestas de IA siempre se confirman en la v1 del diseño; el umbral solo ordena y resalta.
     needsConfirmation: true,

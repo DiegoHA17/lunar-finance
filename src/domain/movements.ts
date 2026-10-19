@@ -123,3 +123,29 @@ export function sortMovements(list: Movement[], direction: 'desc' | 'asc' = 'des
 export function needsClassification(m: Movement): boolean {
   return m.categoryLink === null && (m.kind === 'expense' || m.kind === 'income' || m.kind === 'refund')
 }
+
+/** Motivo breve de una incidencia (tablas y PDF). */
+export function issueShort(code: MovementIssue['code'], m: Pick<Movement, 'rawKind' | 'categoryLink'>): string {
+  switch (code) {
+    case 'missing_date':
+      return 'Sin fecha'
+    case 'missing_amount':
+      return 'Sin importe'
+    case 'missing_kind':
+      return 'Sin tipo'
+    case 'unknown_kind':
+      return `Tipo «${m.rawKind ?? ''}» sin asignar`
+    case 'excess_decimals':
+      return 'Más de 2 decimales'
+    case 'negative_amount':
+      return 'Importe negativo'
+    case 'unknown_category':
+      return m.categoryLink?.type === 'name' ? `«${m.categoryLink.name}» no catalogada` : 'Categoría no encontrada'
+    case 'kind_mismatch':
+      return 'Categoría de otro tipo'
+    case 'possible_duplicate':
+      return 'Posible duplicado'
+    case 'missing_description':
+      return 'Sin descripción'
+  }
+}

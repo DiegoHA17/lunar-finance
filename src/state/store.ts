@@ -5,7 +5,7 @@ import type { Rule } from '../domain/classifier/rules'
 import { today } from '../domain/dates'
 import { type Period, type PeriodKind, periodContaining } from '../domain/periods'
 import type { Category, Movement } from '../domain/types'
-import type { AppConfig, LunarError, PageDto } from '../infra/contracts'
+import type { AiStatus, AppConfig, LunarError, PageDto } from '../infra/contracts'
 
 export type Screen = 'dashboard' | 'movements' | 'categories' | 'rules' | 'reports' | 'settings'
 export type ThemePref = 'system' | 'light' | 'dark'
@@ -16,9 +16,27 @@ export interface Preferences {
   mode: DataMode
   periodKind: Exclude<PeriodKind, 'custom'>
   welcomed: boolean
+  /** IA local opcional: desactivada por defecto. */
+  ai: { enabled: boolean; model: string | null }
 }
 
-export const DEFAULT_PREFS: Preferences = { theme: 'system', mode: 'notion', periodKind: 'month', welcomed: false }
+export const DEFAULT_PREFS: Preferences = { theme: 'system', mode: 'notion', periodKind: 'month', welcomed: false, ai: { enabled: false, model: null } }
+
+export interface PullState {
+  model: string
+  state: 'running' | 'done' | 'cancelled' | 'error'
+  status: string
+  completed: number
+  total: number
+  error: LunarError | null
+}
+
+export interface AiUiState {
+  status: AiStatus | null
+  checking: boolean
+  starting: boolean
+  pull: PullState | null
+}
 
 export interface DataState {
   status: 'idle' | 'loading' | 'ready' | 'error'
@@ -63,6 +81,7 @@ export interface AppState {
   period: Period
   movementsNav: MovementsNav | null
   toasts: Toast[]
+  ai: AiUiState
 }
 
 export const EMPTY_DATA: DataState = {
@@ -116,6 +135,7 @@ export const store = new Store<AppState>({
   period: periodContaining('month', today()),
   movementsNav: null,
   toasts: [],
+  ai: { status: null, checking: false, starting: false, pull: null },
 })
 
 /** Suscripción a una parte del estado. El selector debe devolver referencias estables (partes del estado). */

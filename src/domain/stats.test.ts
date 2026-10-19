@@ -136,7 +136,7 @@ describe('comparación con el periodo anterior', () => {
   })
 
   it('compara enero con diciembre del año anterior', () => {
-    const list = [mov({ euros: 100, date: '2025-12-15' }), mov({ euros: 150, date: '2026-01-15' })]
+    const list = [mov({ euros: 100, date: '2025-12-01' }), mov({ euros: 150, date: '2026-01-15' })]
     const c = compareWithPrevious(list, monthPeriod(2026, 1), '2030-01-01')!
     expect(c.previousPeriod).toEqual(monthPeriod(2025, 12))
     expect(c.netExpenseChangeBp).toBe(5000)
@@ -145,7 +145,7 @@ describe('comparación con el periodo anterior', () => {
 
   it('un periodo en curso se compara hasta el mismo punto del anterior', () => {
     const list = [
-      mov({ euros: 100, date: '2026-09-05' }),
+      mov({ euros: 100, date: '2026-09-01' }),
       mov({ euros: 900, date: '2026-09-25' }),
       mov({ euros: 1500, kind: 'income', date: '2026-09-28' }),
       mov({ euros: 150, date: '2026-10-10' }),
@@ -159,13 +159,21 @@ describe('comparación con el periodo anterior', () => {
     expect(c.incomeChangeBp).toBeNull()
   })
 
+  it('no compara si el historial no cubre todo el tramo anterior (datos parciales)', () => {
+    // Los datos empiezan en agosto de 2025: comparar 2026 con «2025» sería comparar un año con cinco meses.
+    const list = [mov({ euros: 100, date: '2025-08-10' }), mov({ euros: 50, date: '2025-09-15' }), mov({ euros: 100, date: '2026-03-10' })]
+    expect(compareWithPrevious(list, yearPeriod(2026), '2027-01-01')).toBeNull()
+    expect(compareWithPrevious(list, monthPeriod(2025, 9), '2027-01-01')).toBeNull() // agosto también es parcial
+    expect(compareWithPrevious(list, monthPeriod(2025, 10), '2027-01-01')).not.toBeNull()
+  })
+
   it('el tramo anterior no se sale de su periodo (31 de marzo frente a febrero)', () => {
-    const c = compareWithPrevious([mov({ euros: 1, date: '2026-02-10' })], monthPeriod(2026, 3), '2026-03-30')!
+    const c = compareWithPrevious([mov({ euros: 1, date: '2026-02-01' })], monthPeriod(2026, 3), '2026-03-30')!
     expect(c.previousRange.end).toBe('2026-02-28')
   })
 
   it('compara trimestres a través del año', () => {
-    const list = [mov({ euros: 200, date: '2025-11-01' }), mov({ euros: 100, date: '2026-02-01' })]
+    const list = [mov({ euros: 200, date: '2025-10-01' }), mov({ euros: 100, date: '2026-02-01' })]
     const q1 = quarterPeriod(2026, 1)
     const c = compareWithPrevious(list, q1, '2030-01-01')!
     expect(c.netExpenseChangeBp).toBe(-5000)

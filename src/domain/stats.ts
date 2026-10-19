@@ -236,6 +236,12 @@ export function summarize(all: Movement[], categories: CategoryIndex, period: Pe
   }
 }
 
+function earliestCountedDate(all: Movement[]): ISODate | null {
+  let first: ISODate | null = null
+  for (const m of all) if (m.date && isCounted(m) && (first === null || m.date < first)) first = m.date
+  return first
+}
+
 export interface Comparison {
   /** Periodo anterior completo (para nombrarlo). */
   previousPeriod: Period
@@ -268,6 +274,10 @@ export function compareWithPrevious(all: Movement[], period: Period, asOf: ISODa
     currentRange = { ...period, end: asOf }
     previousRange = { ...prev, end: prevEnd < prev.end ? prevEnd : prev.end }
   }
+  // Datos suficientes: el historial debe empezar antes del tramo anterior. Si el primer movimiento registrado es
+  // posterior al inicio de ese tramo, se compararía un periodo completo con uno parcial.
+  const firstDate = earliestCountedDate(all)
+  if (!firstDate || firstDate > previousRange.start) return null
   const previous = computeTotals(movementsInPeriod(all, previousRange))
   if (previous.countedCount === 0) return null
   const current = computeTotals(movementsInPeriod(all, currentRange))

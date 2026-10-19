@@ -3,10 +3,10 @@
  * El token nunca vuelve a la interfaz; solo se envía una vez al guardarlo.
  */
 
-import { invoke } from '@tauri-apps/api/core'
-import type { Backend, Host, StoreName } from './backend'
+import { Channel, invoke } from '@tauri-apps/api/core'
+import type { AiHost, Backend, Host, StoreName } from './backend'
 import { LunarError } from './contracts'
-import type { AppConfig, DiagnosticReport, PageDto, PropValue, PropWrite, PropertySpec, QueryResult, Role, SchemaDto, SourceSummary } from './contracts'
+import type { AiClassifyInput, AiStatus, AiSuggestion, DuplicatePair, PullEvent, AppConfig, DiagnosticReport, PageDto, PropValue, PropWrite, PropertySpec, QueryResult, Role, SchemaDto, SourceSummary } from './contracts'
 
 export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
@@ -73,8 +73,35 @@ export class TauriBackend implements Backend {
   }
 }
 
+export class TauriAi implements AiHost {
+  status() {
+    return call<AiStatus>('ai_status')
+  }
+  start() {
+    return call<AiStatus>('ai_start')
+  }
+  pull(model: string, onEvent: (e: PullEvent) => void) {
+    const channel = new Channel<PullEvent>()
+    channel.onmessage = onEvent
+    return call<boolean>('ai_pull', { model, onEvent: channel })
+  }
+  cancelPull() {
+    return call<void>('ai_cancel_pull')
+  }
+  classify(model: string, input: AiClassifyInput) {
+    return call<AiSuggestion>('ai_classify', { model, input })
+  }
+  reviewDuplicates(model: string, names: string[]) {
+    return call<DuplicatePair[]>('ai_review_duplicates', { model, names })
+  }
+  openDownloadPage() {
+    return call<void>('open_ollama_download')
+  }
+}
+
 export class TauriHost implements Host {
   readonly native = true
+  readonly ai = new TauriAi()
   exportFile(suggestedName: string, format: 'pdf' | 'csv', bytes: Uint8Array) {
     return call<string | null>('export_save', { suggestedName, format, bytes: Array.from(bytes) })
   }
@@ -92,6 +119,7 @@ export class TauriHost implements Host {
 /** Anfitrión en el navegador (solo desarrollo): descarga con un enlace y preferencias en localStorage (sin secretos). */
 export class BrowserHost implements Host {
   readonly native = false
+  readonly ai = null
   async exportFile(suggestedName: string, format: 'pdf' | 'csv', bytes: Uint8Array) {
     const name = suggestedName.endsWith(`.${format}`) ? suggestedName : `${suggestedName}.${format}`
     const blob = new Blob([bytes as BlobPart], { type: format === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8' })

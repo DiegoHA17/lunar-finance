@@ -63,20 +63,11 @@ con la primera palabra significativa de la descripción (sin números, fechas ni
 Con la propiedad opcional «Origen clasificación» (Ajustes → Mejoras opcionales), Lunar escribe `Regla`, `Manual`
 o `IA` junto a la categoría. Sin ella, el origen es «desconocido» y se trata como manual.
 
-## Diseño preparado para un proveedor de IA (Ollama)
+## IA local (Ollama)
 
-`ClassificationPipeline` (`src/domain/classifier/pipeline.ts`) encadena:
-
-1. reglas (síncronas, deterministas);
-2. si no hay propuesta clara y hay un `ClassificationProvider` de IA habilitado, se le pide una sugerencia
-   `{categoryId, confidence, reason}`;
-3. `validateSuggestion` comprueba que la categoría existe, está activa y es compatible; si no, se descarta;
-4. toda propuesta de IA **requiere confirmación** (el umbral de confianza solo ordena y resalta);
-5. si el proveedor falla o no está instalado, se sigue con el resultado de las reglas sin bloquear nada.
-
-El proveedor nunca escribe en Notion ni modifica el esquema: solo devuelve una sugerencia que pasa por las mismas
-validaciones que una elección manual. La implementación de Ollama (llamada local a `127.0.0.1:11434` desde Rust)
-está fuera de la v1; ver ROADMAP.
+Complementa a las reglas en la revisión de pendientes: solo se consulta lo que las reglas no resuelven, el modelo
+elige de una lista cerrada de categorías activas y compatibles, la respuesta se valida y nada se aplica sin pulsar
+«Aplicar». Criterio de confianza y detalles en [ia.md](ia.md).
 
 ## Categorías sugeridas
 

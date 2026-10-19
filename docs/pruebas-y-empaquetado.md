@@ -18,7 +18,10 @@ usuario.
 | Clasificación | `src/domain/classifier/classifier.test.ts` | Coincidencias normalizadas, prioridad, especificidad, ambigüedad, independencia del orden, archivadas, tipos, excepciones, pipeline de IA simulado |
 | Categorías y movimientos | `src/domain/categories.test.ts` | Alias, duplicados de nombre, renombrado, archivadas, validación, duplicados de movimientos |
 | CSV | `src/domain/csv.test.ts` | BOM, «;», coma decimal, inyección de fórmulas, consistencia con filtros y balance |
-| Informes/PDF | `src/domain/report.test.ts` | Mismas cifras que el panel, paginación, cabecera repetida, totales no huérfanos, márgenes, emojis, PDF válido |
+| Informes/PDF | `src/domain/report.test.ts` | Mismas cifras que el panel, gráfica con datos conocidos (etiquetas exactas, barras proporcionales, negativos), gráfica = tabla, sin notas, orden de secciones, paginación, cabecera repetida, totales no huérfanos, márgenes, periodos vacíos, cambios de mes/trimestre/año, emojis, PDF válido |
+| Escala de ejes | `src/domain/scale.test.ts` | Etiquetas exactas, pasos 1-2-5, negativos, importes pequeños, sin datos |
+| IA (TypeScript) | `src/services/ai.test.ts` | Estados, modelo, recomendación, propuestas válidas e inválidas, historial, errores, cancelación, sin IA, organización |
+| IA (Rust) | `src-tauri/src/ai/*.rs` | API simulada de Ollama: estado, modelos, descarga, cancelación, clasificación, tiempo agotado, detección de instalación |
 | Mapeo de Notion | `src/infra/mapping.test.ts` | Lectura/escritura por tipo de propiedad, relación, fórmulas, sincronía con `config.rs` |
 | Servicios | `src/services/services.test.ts` | Integración contra el backend de demostración: carga, errores, conflictos, creación con duplicados, catálogo, clasificación en lote, migración |
 | Cliente Notion (Rust) | `src-tauri/src/notion/*.rs` | Cabeceras, 401/403/404, 429 con `Retry-After`, 5xx, red caída, paginación, papelera, incompletos, conflictos, diagnóstico |
@@ -28,6 +31,12 @@ Prueba manual contra Windows Credential Manager (crea y borra una entrada de pru
 
 ```bash
 cd src-tauri && cargo test -- --ignored keyring_roundtrip
+```
+
+Prueba real contra Ollama (con el servicio en marcha y el modelo instalado):
+
+```bash
+cd src-tauri && cargo test -- --ignored real_ollama --nocapture
 ```
 
 PDF de muestra con los datos de demostración, para revisarlos a ojo:
@@ -52,7 +61,7 @@ No están automatizadas porque necesitan el token del usuario. Procedimiento man
 npm run tauri build
 ```
 
-Genera `src-tauri/target/release/bundle/nsis/Lunar_0.1.0_x64-setup.exe`: instalador por usuario (sin permisos de
+Genera `src-tauri/target/release/bundle/nsis/Lunar Finance_<versión>_x64-setup.exe` (con `npm run release`; después `npm run release:manifest` lo copia a `release/<versión>/`): instalador por usuario (sin permisos de
 administrador), en español, con WebView2 incluido si falta. La primera vez, Tauri descarga sus herramientas de
 NSIS desde su repositorio oficial.
 

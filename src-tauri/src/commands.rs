@@ -24,6 +24,10 @@ pub struct AppState {
     pub data_dir: PathBuf,
     /// Serializa las escrituras de configuración y documentos locales.
     pub write_lock: Mutex<()>,
+    /// Dirección del servicio local de Ollama (siempre 127.0.0.1).
+    pub ollama_url: String,
+    /// Señal para cancelar la descarga de modelo en curso.
+    pub ai_pull: Mutex<Option<tokio::sync::watch::Sender<bool>>>,
 }
 
 impl AppState {
@@ -179,3 +183,104 @@ pub fn open_notion_url(app: tauri::AppHandle, url: String) -> AppResult<()> {
     }
     app.opener().open_url(url, None::<&str>).map_err(|e| AppError::internal("No se pudo abrir el navegador.").detail(e.to_string()))
 }
+
+// ── Inteligencia artificial local (Ollama) ───────────────────────────────────────────────────────────────────
+
+use crate::ai::{self, AiStatus, ollama::{ClassifyInput, ClassifySuggestion, DuplicatePair, OllamaClient, PullEvent}};
+use tauri::ipc::Channel;
+
+fn ollama(state: &AppState) -> OllamaClient {
+    OllamaClient::new(&state.ollama_url)
+}
+
+#[tauri::command]
+pub async fn ai_status(state: State<'_, AppState>) -> AppResult<AiStatus> {
+    Ok(ai::status(&ollama(&state), &ai::system::current_installation()).await)
+}
+
+/// Abre la aplicación oficial de Ollama ya instalada y espera a que el servicio responda (máx. ~20 s).
+#[tauri::command]
+pub async fn ai_start(state: State<'_, AppState>) -> AppResult<AiStatus> {
+    let inst = ai::system::current_installation();
+    let app = inst.app.clone().ok_or_else(|| AppError::validation("Ollama no está instalado."))?;
+    let client = ollama(&state);
+    if client.version().await.is_err() {
+        ai::system::start_app(&app)?;
+        for _ in 0..40 {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            if client.version().await.is_ok() {
+                break;
+            }
+        }
+    }
+    Ok(ai::status(&client, &inst).await)
+}
+
+/// Descarga un modelo con progreso real. `true` si terminó, `false` si se canceló. Si ya está instalado, no se
+/// vuelve a descargar.
+#[tauri::command]
+pub async fn ai_pull(state: State<'_, AppState>, model: String, on_event: Channel<PullEvent>) -> AppResult<bool> {
+    ai::validate_model_name(&model)?;
+    let client = ollama(&state);
+    if client.tags().await?.iter().any(|m| m.name == model) {
+        let _ = on_event.send(PullEvent::Done);
+        return Ok(true);
+    }
+    let rx = {
+        let mut slot = state.ai_pull.lock().map_err(|_| AppError::internal("Bloqueo de descarga envenenado."))?;
+        if slot.is_some() {
+            return Err(AppError::validation("Ya hay una descarga en curso."));
+        }
+        let (tx, rx) = tokio::sync::watch::channel(false);
+        *slot = Some(tx);
+        rx
+    };
+    let result = client.pull(&model, |e| { let _ = on_event.send(e); }, &rx).await;
+    if let Ok(mut slot) = state.ai_pull.lock() {
+        *slot = None;
+    }
+    log::info!("Descarga de modelo terminada: {:?}", result.as_ref().map(|d| if *d { "completa" } else { "cancelada" }));
+    result
+}
+
+#[tauri::command]
+pub fn ai_cancel_pull(state: State<'_, AppState>) -> AppResult<()> {
+    if let Some(tx) = state.ai_pull.lock().map_err(|_| AppError::internal("Bloqueo de descarga envenenado."))?.as_ref() {
+        let _ = tx.send(true);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn ai_classify(state: State<'_, AppState>, model: String, input: ClassifyInput) -> AppResult<ClassifySuggestion> {
+    ai::validate_model_name(&model)?;
+    if input.categories.len() > 200 {
+        return Err(AppError::validation("Demasiadas categorías."));
+    }
+    ollama(&state).classify(&model, &input).await
+}
+
+#[tauri::command]
+pub async fn ai_review_duplicates(state: State<'_, AppState>, model: String, names: Vec<String>) -> AppResult<Vec<DuplicatePair>> {
+    ai::validate_model_name(&model)?;
+    if names.len() > 200 {
+        return Err(AppError::validation("Demasiadas categorías."));
+    }
+    ollama(&state).review_duplicates(&model, &names).await
+}
+
+/// Página oficial de descarga de Ollama para el sistema actual (en Windows, instalador por usuario sin administrador).
+#[tauri::command]
+pub fn open_ollama_download(app: tauri::AppHandle) -> AppResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(OLLAMA_DOWNLOAD, None::<&str>)
+        .map_err(|e| AppError::internal("No se pudo abrir el navegador.").detail(e.to_string()))
+}
+
+#[cfg(windows)]
+const OLLAMA_DOWNLOAD: &str = "https://ollama.com/download/windows";
+#[cfg(target_os = "macos")]
+const OLLAMA_DOWNLOAD: &str = "https://ollama.com/download/mac";
+#[cfg(not(any(windows, target_os = "macos")))]
+const OLLAMA_DOWNLOAD: &str = "https://ollama.com/download/linux";

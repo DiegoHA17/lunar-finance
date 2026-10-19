@@ -168,3 +168,49 @@ export class LunarError extends Error {
     return new LunarError({ code: 'internal', message })
   }
 }
+
+// ── IA local (Ollama) ─────────────────────────────────────────────────────────────────────────────────────────
+
+export interface LocalModel {
+  name: string
+  size: number
+  family: string | null
+  parameterSize: string | null
+  quantization: string | null
+  capabilities: string[]
+}
+
+export interface AiStatus {
+  installed: boolean
+  canStart: boolean
+  running: boolean
+  version: string | null
+  models: LocalModel[]
+  resources: { totalMemoryBytes: number | null; freeDiskBytes: number | null }
+  error?: AppErrorDto
+}
+
+export type PullEvent =
+  | { kind: 'status'; status: string }
+  | { kind: 'progress'; status: string; digest: string; completed: number; total: number }
+  | { kind: 'done' }
+
+export interface AiClassifyInput {
+  description: string
+  amount: string
+  kind: string
+  paymentMethod: string | null
+  categories: { id: string; name: string }[]
+}
+
+export interface AiSuggestion {
+  categoryId: string | null
+  confidence: number
+  reason: string
+}
+
+export interface DuplicatePair {
+  a: string
+  b: string
+  reason: string
+}

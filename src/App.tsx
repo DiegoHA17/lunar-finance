@@ -31,7 +31,7 @@ function DemoBanner() {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-warn-line bg-warn-soft px-5 py-1.5 text-[13px] text-warn" role="status">
       <span>
-        <strong className="font-semibold">Modo demostración.</strong> Las cifras son ficticias y los cambios no se guardan en Notion.
+        <strong className="font-semibold">Demostración</strong> · datos ficticios
       </span>
       {native && (
         <button className="btn btn-sm border-warn-line bg-transparent text-warn" onClick={() => void switchMode('notion')}>
@@ -58,7 +58,7 @@ export function App() {
     return (
       <div className="grid h-full place-items-center">
         <div className="flex flex-col items-center gap-3 text-mist">
-          <img src={logo} width={72} height={72} alt="Lunar" className="select-none" draggable={false} />
+          <img src={logo} width={72} height={72} alt="Lunar Finance" className="select-none" draggable={false} />
           <Spinner />
         </div>
       </div>

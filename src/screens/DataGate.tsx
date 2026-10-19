@@ -22,7 +22,7 @@ export function DataGate({ children }: { children: ReactNode }) {
   if (!ready) {
     return (
       <EmptyState
-        title={tokenConfigured ? 'Elige tu base de datos de movimientos' : 'Conecta Lunar con Notion'}
+        title={tokenConfigured ? 'Elige tu base de datos de movimientos' : 'Conecta Lunar Finance con Notion'}
         actions={
           <>
             <button className="btn btn-primary" onClick={() => navigate('settings')}>
@@ -30,16 +30,12 @@ export function DataGate({ children }: { children: ReactNode }) {
             </button>
             {native && mode !== 'demo' && (
               <button className="btn" onClick={() => void switchMode('demo')}>
-                Explorar con datos de demostración
+                Ver demostración
               </button>
             )}
           </>
         }
-      >
-        {tokenConfigured
-          ? 'El token ya está guardado. Falta indicar qué base de datos de Notion contiene tus gastos y cómo se llaman sus propiedades.'
-          : 'Lunar lee y escribe tus movimientos en tu propia base de datos de Notion. Necesitas el secreto de una integración interna con acceso a esa base de datos.'}
-      </EmptyState>
+      />
     )
   }
 
@@ -79,7 +75,7 @@ export function DataGate({ children }: { children: ReactNode }) {
             }
           >
             <p>
-              No se pudo actualizar: {data.error.message} Se muestran los datos leídos {data.fetchedAt ? `el ${formatInstant(data.fetchedAt)}` : 'anteriormente'}.
+              No se pudo actualizar: {data.error.message} {data.fetchedAt && <span className="opacity-80">(datos del {formatInstant(data.fetchedAt)})</span>}
             </p>
             {data.error.hint && <p className="mt-0.5 text-[12.5px] opacity-85">{data.error.hint}</p>}
           </Notice>

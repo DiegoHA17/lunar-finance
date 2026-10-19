@@ -179,7 +179,7 @@ export function SourceSetup({ role, onSaved }: { role: Role; onSaved?: () => voi
           <table className="data-table text-[13.5px]">
             <thead>
               <tr>
-                <th className="w-[200px]">Campo de Lunar</th>
+                <th className="w-[200px]">Campo</th>
                 <th>Propiedad de Notion</th>
               </tr>
             </thead>
@@ -194,7 +194,6 @@ export function SourceSetup({ role, onSaved }: { role: Role; onSaved?: () => voi
                         {spec.label}
                         {spec.required ? '' : <span className="font-normal text-mist"> (opcional)</span>}
                       </div>
-                      {spec.help && <div className="text-[12px] text-mist">{spec.help}</div>}
                     </td>
                     <td>
                       <select
@@ -230,9 +229,9 @@ export function SourceSetup({ role, onSaved }: { role: Role; onSaved?: () => voi
           {role === 'movements' && fields.kind && (
             <div>
               <h3 className="mb-1 text-[13.5px] font-medium">Valores de «{fields.kind.name}»</h3>
-              <p className="mb-2 text-[12.5px] text-mist">Indica qué significa cada valor. Un valor sin asignar deja el movimiento fuera de los totales (nunca se adivina).</p>
+              <p className="mb-2 text-[12.5px] text-mist">Un valor sin asignar queda fuera de los totales.</p>
               {kindValues.length === 0 ? (
-                <p className="text-[13px] text-mist">No hay valores todavía. Se reconocerán «Gasto», «Ingreso», «Devolución» y «Transferencia».</p>
+                <p className="text-[13px] text-mist">Sin valores todavía.</p>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {kindValues.map((v) => (

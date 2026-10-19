@@ -9,6 +9,7 @@ import type { CategoryRow } from '../domain/stats'
 import { exportCsv, exportReportPdf } from '../services/reports'
 import { exportWithHost } from '../state/actions'
 import { useApp } from '../state/store'
+import { SpendColumns } from '../ui/charts'
 import { PeriodPicker } from '../ui/PeriodPicker'
 import { CategoryLabel, Money, PageHeader, Spinner } from '../ui/primitives'
 import { useYears } from '../state/hooks'
@@ -79,7 +80,7 @@ export function Reports() {
 
   return (
     <>
-      <PageHeader title="Informes" subtitle="Las cifras son exactamente las del panel de inicio para el mismo periodo." />
+      <PageHeader title="Informes" />
       <DataGate>
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -126,23 +127,20 @@ export function Reports() {
                 </div>
               ))}
             </dl>
-            {t.refundCents > 0 && (
-              <p className="-mt-2 mb-4 text-[13px] text-mist">
-                Gasto neto = {formatEUR(t.expenseCents)} en gastos − {formatEUR(t.refundCents)} en devoluciones.
-              </p>
-            )}
+            {t.refundCents > 0 && <p className="-mt-2 mb-4 text-[13px] text-mist">Devoluciones: {formatEUR(t.refundCents)}</p>}
             {report.comparison && (
               <p className="mb-4 text-[13px] text-ink-2">
-                {report.comparison.partial ? `Hasta hoy, respecto al mismo punto de ${periodLabel(report.comparison.previousPeriod)}` : `Respecto a ${periodLabel(report.comparison.previousPeriod)}`}:{' '}
+                {report.comparison.partial ? `Hasta hoy, frente al mismo tramo de ${periodLabel(report.comparison.previousPeriod)}` : `Frente a ${periodLabel(report.comparison.previousPeriod)}`}:{' '}
                 {report.comparison.netExpenseChangeBp !== null && <>gasto neto {report.comparison.netExpenseChangeBp > 0 ? '+' : ''}{formatBasisPoints(report.comparison.netExpenseChangeBp)}, </>}
                 balance {formatEUR(report.comparison.balanceDiffCents, { signed: true })}.
               </p>
             )}
 
             {report.summary.movements.length === 0 ? (
-              <p className="py-6 text-mist">No hay movimientos en este periodo. El PDF se generará igualmente indicándolo.</p>
+              <p className="py-6 text-mist">Sin movimientos en este periodo.</p>
             ) : (
               <div className="flex flex-col gap-6">
+                {report.summary.timeline.meaningful && <SpendColumns timeline={report.summary.timeline} />}
                 {report.summary.expenseByCategory.length > 0 && (
                   <section>
                     <h3 className="mb-2 text-[15px] font-semibold text-night">Gasto por categoría</h3>
@@ -155,23 +153,8 @@ export function Reports() {
                     <RowsTable rows={report.summary.incomeByCategory} total={t.incomeCents} totalLabel="Total ingresos" />
                   </section>
                 )}
-                {detail === 'full' && (
-                  <p className="text-[13px] text-mist">
-                    El PDF incluirá además el listado de los {t.countedCount} movimientos con fecha, descripción, categoría, tipo, método de pago e importe
-                    {report.summary.timeline.meaningful ? ', y la evolución del gasto' : ''}.
-                  </p>
-                )}
               </div>
             )}
-
-            <section className="mt-6 border-t border-line pt-4">
-              <h3 className="mb-1.5 text-[13px] font-medium text-ink-2">Notas del informe</h3>
-              <ul className="list-disc pl-5 text-[13px] text-mist">
-                {report.notes.map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            </section>
           </article>
         </div>
       </DataGate>

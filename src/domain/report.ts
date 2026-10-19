@@ -4,7 +4,7 @@
  */
 
 import type { CategoryIndex } from './categories'
-import { formatDateShort, formatInstant, today } from './dates'
+import { today } from './dates'
 import { type Period, periodLabel, periodSlug } from './periods'
 import { type Comparison, type Summary, compareWithPrevious, summarize } from './stats'
 import type { Movement } from './types'
@@ -27,7 +27,8 @@ export interface ReportModel {
   generatedAt: string
   summary: Summary
   comparison: Comparison | null
-  notes: string[]
+  /** Solo avisos que afectan a la validez de las cifras (p. ej. consulta incompleta). Sin notas explicativas. */
+  warnings: string[]
   demo: boolean
   fileName: string
 }
@@ -35,24 +36,8 @@ export interface ReportModel {
 export function buildReport(all: Movement[], categories: CategoryIndex, period: Period, detail: ReportDetail, ctx: ReportContext, now = new Date()): ReportModel {
   const summary = summarize(all, categories, period)
   const comparison = compareWithPrevious(all, period, today(now))
-  const notes: string[] = []
-  if (ctx.demo) notes.push('Informe generado con datos de demostración ficticios. No refleja información financiera real.')
-  if (!ctx.dataComplete) notes.push('Notion indicó que la consulta no devolvió todos los registros (límite de 10 000 filas). Las cifras pueden estar incompletas.')
-  if (summary.excluded.length > 0) {
-    notes.push(
-      `${summary.excluded.length} movimiento(s) del periodo no se incluyen en los totales por tener datos incompletos o inválidos (se detallan al final).`,
-    )
-  }
-  if (summary.uncategorizedCount > 0) notes.push(`${summary.uncategorizedCount} movimiento(s) están sin categoría y se agrupan como «Sin categoría».`)
-  if (summary.unknownCategoryCount > 0) notes.push(`${summary.unknownCategoryCount} movimiento(s) tienen una categoría que no está en el catálogo.`)
-  if (comparison?.partial) {
-    notes.push(
-      `El periodo está en curso: la comparación usa del ${formatDateShort(comparison.currentRange.start)} al ${formatDateShort(comparison.currentRange.end)} frente al mismo número de días del periodo anterior.`,
-    )
-  }
-  if (summary.totals.transferCount > 0) notes.push('Las transferencias internas no se cuentan como gasto ni como ingreso.')
-  notes.push('El balance es ingresos menos gasto neto del periodo; no equivale al saldo de ninguna cuenta bancaria.')
-  if (ctx.lastSyncAt) notes.push(ctx.demo ? `Datos de demostración generados el ${formatInstant(ctx.lastSyncAt)}.` : `Datos leídos de Notion el ${formatInstant(ctx.lastSyncAt)}.`)
+  const warnings: string[] = []
+  if (!ctx.dataComplete) warnings.push('Notion no devolvió todos los registros: las cifras pueden estar incompletas.')
 
   return {
     title: detail === 'full' ? 'Informe detallado' : 'Resumen financiero',
@@ -62,8 +47,8 @@ export function buildReport(all: Movement[], categories: CategoryIndex, period: 
     generatedAt: now.toISOString(),
     summary,
     comparison,
-    notes,
+    warnings,
     demo: ctx.demo,
-    fileName: `Lunar ${detail === 'full' ? 'informe' : 'resumen'} ${periodSlug(period)}${ctx.demo ? ' (demo)' : ''}`,
+    fileName: `Lunar Finance ${detail === 'full' ? 'informe' : 'resumen'} ${periodSlug(period)}${ctx.demo ? ' (demo)' : ''}`,
   }
 }

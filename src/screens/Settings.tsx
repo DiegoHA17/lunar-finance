@@ -1,4 +1,6 @@
 import { CircleAlert, CircleCheck, KeyRound, Lock, TriangleAlert } from 'lucide-react'
+import { APP_AUTHOR, APP_NAME, APP_VERSION } from '../app-info'
+import logo from '../assets/brand/lunar-logo-64.png'
 import { cx } from '../ui/cx'
 import { type ReactNode, useState } from 'react'
 import { type DiagnosticReport, LunarError } from '../infra/contracts'
@@ -6,6 +8,7 @@ import { originPropertyPlan } from '../services/migration'
 import { applyOriginMigration, backend, clearToken, saveConfig, saveToken, setPrefs, switchMode } from '../state/actions'
 import { type ThemePref, useApp } from '../state/store'
 import { Notice, PageHeader, Spinner } from '../ui/primitives'
+import { AiSettings } from './AiSettings'
 import { SourceSetup } from './SourceSetup'
 
 function Section({ title, description, children }: { title: string; description?: ReactNode; children: ReactNode }) {
@@ -30,7 +33,7 @@ function TokenSection() {
     <div className="flex flex-col gap-4">
       <div className={cx('flex items-center gap-2 text-[13.5px]', configured ? 'text-positive' : 'text-mist')}>
         {configured ? <Lock size={15} /> : <KeyRound size={15} />}
-        {configured ? 'Token guardado en el Administrador de credenciales de Windows. No se vuelve a mostrar.' : 'No hay ningún token guardado en este equipo.'}
+        {configured ? 'Token guardado de forma segura' : 'Sin token'}
       </div>
       <form
         className="flex flex-wrap items-end gap-2"
@@ -62,19 +65,18 @@ function TokenSection() {
           ))}
       </form>
       <details className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
-        <summary className="cursor-pointer font-medium">Cómo obtener el token y dar acceso a tu base de datos</summary>
+        <summary className="cursor-pointer font-medium">Cómo obtener el token</summary>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-ink-2">
           <li>
-            Abre <strong>notion.so/profile/integrations</strong> y crea una integración <em>interna</em> (por ejemplo, «Lunar») en el espacio de trabajo donde está tu base de datos de gastos.
+            Abre <strong>notion.so/profile/integrations</strong> y crea una integración <em>interna</em> (por ejemplo, «Lunar Finance») en el espacio de trabajo donde está tu base de datos de gastos.
           </li>
           <li>En «Capacidades», activa «Leer contenido», «Actualizar contenido» e «Insertar contenido».</li>
-          <li>Copia el «Internal Integration Secret» (empieza por «ntn_») y pégalo arriba. Se guarda cifrado por Windows; Lunar no lo escribe en ningún archivo.</li>
+          <li>Copia el «Internal Integration Secret» (empieza por «ntn_») y pégalo arriba.</li>
           <li>
             <strong>Comparte la base de datos con la integración</strong>: abre la base de datos en Notion → menú «···» arriba a la derecha → Conexiones → busca la integración y confírmalo. Sin este paso Notion responde «404 object_not_found» aunque el token sea correcto.
           </li>
           <li>Si vas a crear el catálogo de categorías, comparte también la página que contiene la base de datos.</li>
         </ol>
-        <p className="mt-2 text-mist">Puedes reutilizar la integración del atajo «Atajo iPhone», pero una integración propia para Lunar permite revocar una sin romper la otra.</p>
       </details>
     </div>
   )
@@ -126,7 +128,7 @@ function Diagnostics() {
           ))}
         </ol>
       )}
-      {report?.movementsReady && <p className="text-[13px] text-positive">La conexión funciona: Lunar puede leer tus movimientos.</p>}
+      {report?.movementsReady && <p className="text-[13px] text-positive">Conexión correcta</p>}
     </div>
   )
 }
@@ -137,7 +139,7 @@ function Migrations() {
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
   if (!config.notion.movements) return <p className="text-[13px] text-mist">Configura primero la base de datos de movimientos.</p>
-  if (!plan) return <p className="text-[13px] text-mist">No hay cambios pendientes. El origen de las clasificaciones se registra en «{config.notion.movements.fields.origin?.name}».</p>
+  if (!plan) return <p className="text-[13px] text-mist">Sin cambios pendientes.</p>
   return (
     <div className="rounded-lg border border-line px-4 py-3 text-[13.5px]">
       <p className="font-medium">{plan.title}</p>
@@ -190,7 +192,6 @@ function CategoriesSource() {
   if (!src && !editing) {
     return (
       <div className="flex flex-col items-start gap-2 text-[13.5px]">
-        <p className="text-ink-2">No hay catálogo. Puedes crearlo desde la pantalla Categorías o conectar una base de datos que ya tengas.</p>
         <button className="btn" onClick={() => setEditing(true)}>
           Conectar una base de datos existente
         </button>
@@ -210,7 +211,7 @@ function CategoriesSource() {
           <button
             className="btn btn-sm btn-ghost"
             onClick={() => void saveConfig({ ...config, notion: { ...config.notion, categories: undefined } })}
-            title="Lunar dejará de usarlo. No se borra nada en Notion."
+            title="Lunar Finance dejará de usarlo. No se borra nada en Notion."
           >
             Desconectar
           </button>
@@ -233,7 +234,7 @@ export function Settings() {
     <>
       <PageHeader title="Ajustes" />
       <div className="panel px-7 py-7">
-        <Section title="Datos" description="De dónde lee Lunar los movimientos.">
+        <Section title="Datos">
           <div className="seg" role="group" aria-label="Origen de los datos">
             <button aria-pressed={!demo} onClick={() => void switchMode('notion')} disabled={!native}>
               Mis datos de Notion
@@ -242,16 +243,16 @@ export function Settings() {
               Demostración
             </button>
           </div>
-          {!native && <p className="mt-2 text-[13px] text-mist">En el navegador solo está disponible la demostración. La conexión con Notion requiere la aplicación de escritorio.</p>}
+          {!native && <p className="mt-2 text-[13px] text-mist">Notion solo está disponible en la aplicación de escritorio.</p>}
         </Section>
 
         {!demo && (
-          <Section title="Conexión con Notion" description="El token se guarda en el Administrador de credenciales de Windows, nunca en archivos ni en la interfaz.">
+          <Section title="Conexión con Notion">
             <TokenSection />
           </Section>
         )}
 
-        <Section title="Base de datos de movimientos" description="La base de datos donde el atajo «Gasto» registra tus movimientos, y qué propiedad corresponde a cada dato.">
+        <Section title="Base de datos de movimientos">
           {config.notion.movements && !editMovements ? (
             <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
               <span>
@@ -266,16 +267,20 @@ export function Settings() {
           )}
         </Section>
 
-        <Section title="Diagnóstico" description="Comprueba paso a paso el token, los permisos, el identificador y el esquema. No modifica nada.">
+        <Section title="Diagnóstico">
           <Diagnostics />
         </Section>
 
-        <Section title="Catálogo de categorías" description="Base de datos de Notion con tus categorías.">
+        <Section title="Catálogo de categorías">
           <CategoriesSource />
         </Section>
 
-        <Section title="Mejoras opcionales del esquema" description="Cambios no destructivos en tu base de datos. Nunca se aplican sin tu confirmación.">
+        <Section title="Mejoras opcionales del esquema">
           <Migrations />
+        </Section>
+
+        <Section title="Inteligencia artificial">
+          <AiSettings />
         </Section>
 
         <Section title="Apariencia">
@@ -294,15 +299,15 @@ export function Settings() {
           </div>
         </Section>
 
-        <Section title="Acerca de Lunar">
-          <dl className="grid grid-cols-[180px_1fr] gap-y-1 text-[13.5px]">
-            <dt className="text-mist">Versión</dt>
-            <dd>0.1.0</dd>
-            <dt className="text-mist">API de Notion</dt>
-            <dd>2026-03-11 (fuentes de datos)</dd>
-            <dt className="text-mist">Datos locales</dt>
-            <dd>Configuración, reglas y preferencias en %APPDATA%\com.lunar.finance. Los movimientos y categorías solo están en Notion.</dd>
-          </dl>
+        <Section title="Acerca de">
+          <div className="flex items-center gap-3 text-[13.5px]">
+            <img src={logo} width={40} height={40} alt="" className="select-none" draggable={false} />
+            <div>
+              <p className="font-semibold text-night">{APP_NAME}</p>
+              <p className="text-mist">Desarrollado por {APP_AUTHOR}</p>
+              <p className="num text-mist">Versión {APP_VERSION}</p>
+            </div>
+          </div>
         </Section>
       </div>
     </>

@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Lunar",
-  "version": "0.1.0",
+  "productName": "Lunar Finance",
+  "version": "../package.json",
   "identifier": "com.lunar.finance",
   "build": {
     "frontendDist": "../dist",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lunar",
+        "title": "Lunar Finance",
         "width": 1280,
         "height": 820,
         "minWidth": 900,
@@ -24,18 +24,18 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'",
-      "devCsp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1420; object-src 'none'; base-uri 'none'; form-action 'none'",
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'",
+      "devCsp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost ws://localhost:1420; object-src 'none'; base-uri 'none'; form-action 'none'",
       "freezePrototype": false
     }
   },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "publisher": "Lunar",
+    "publisher": "Diego Herrera Ayuso",
     "shortDescription": "Finanzas personales conectadas con Notion",
-    "longDescription": "Lunar organiza tus gastos e ingresos de Notion: clasificación automática por reglas, estadísticas e informes PDF y CSV.",
-    "copyright": "© 2026",
+    "longDescription": "Lunar Finance organiza tus gastos e ingresos de Notion: clasificación automática por reglas, estadísticas e informes PDF y CSV.",
+    "copyright": "© 2026 Diego Herrera Ayuso",
     "category": "Finance",
     "icon": [
       "icons/32x32.png",

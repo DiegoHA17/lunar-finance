@@ -131,7 +131,7 @@ export function MovementDialog({ movement, onClose }: { movement: Movement | nul
             </ul>
           </Notice>
         )}
-        {duplicate && <Notice kind="warn">Ya existe un movimiento con la misma fecha, importe, tipo y descripción. ¿Seguro que es otro distinto?</Notice>}
+        {duplicate && <Notice kind="warn">Ya existe uno igual (fecha, importe, tipo y descripción).</Notice>}
         <Field label="Descripción" htmlFor="mv-desc" error={submitted ? errors.description : undefined}>
           <input id="mv-desc" className="field" value={description} onChange={(e) => (setDescription(e.target.value), setDuplicate(false))} autoFocus aria-invalid={submitted && Boolean(errors.description)} />
         </Field>
@@ -152,14 +152,14 @@ export function MovementDialog({ movement, onClose }: { movement: Movement | nul
               </button>
             ))}
           </div>
-          {kind === 'transfer' && <p className="mt-1 text-xs text-mist">Una transferencia entre tus cuentas no cuenta como gasto ni como ingreso.</p>}
+          {kind === 'transfer' && <p className="mt-1 text-xs text-mist">No cuenta como gasto ni ingreso.</p>}
         </fieldset>
         {kind !== 'transfer' && (
           <Field label="Categoría" htmlFor="mv-cat" error={submitted ? errors.category : undefined}>
             <CategorySelect id="mv-cat" value={categoryId} kind={kind} categories={categories} onChange={setCategoryId} />
             {suggestion && (
               <button type="button" className="mt-1 self-start text-[12.5px] text-accent hover:underline" onClick={() => setCategoryId(suggestion.id)}>
-                Sugerencia de tus reglas: {suggestion.name}. Usar
+                Sugerencia: {suggestion.name}
               </button>
             )}
           </Field>

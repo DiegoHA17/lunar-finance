@@ -54,6 +54,12 @@ Estados: ✅ hecho y verificado · 🟡 hecho, pendiente de verificar con datos 
 - ✅ TypeScript estricto, oxlint sin avisos, pruebas de TypeScript y de Rust.
 - ✅ Instalador NSIS por usuario (ver docs/pruebas-y-empaquetado.md).
 
+## Distribución 0.2.0 ✅ / ⛔
+
+- ✅ Nombre Lunar Finance, versión única, «Acerca de», instalador Windows verificado con hash y manifiesto.
+- ✅ Notion real verificado en lectura con la configuración existente (diagnóstico completo).
+- ⛔ Paquetes de Linux y macOS: configurados, no compilados (ver docs/distribucion.md).
+
 ## Siguientes pasos
 
 - ⛔ Conectar tu Notion y ejecutar el diagnóstico.
@@ -62,17 +68,13 @@ Estados: ✅ hecho y verificado · 🟡 hecho, pendiente de verificar con datos 
 - ⏳ Importar/exportar reglas en JSON desde la interfaz.
 - ⏳ Firma de código del instalador.
 
-## Fase futura — Ollama ⏳
+## Ollama (IA local) ✅ / ⛔
 
-No forma parte de la primera entrega. Plan:
-
-1. `OllamaProvider` en Rust (HTTP local a `127.0.0.1:11434`, sin descargar modelos), detrás de un ajuste
-   desactivado por defecto.
-2. Prompt cerrado con la lista de categorías activas compatibles; respuesta JSON validada por
-   `validateSuggestion`; siempre con confirmación.
-3. **Prueba de mejora real**: con un conjunto etiquetado de descripciones sintéticas, medir qué porcentaje de
-   pendientes sin regla acierta la IA (precisión por encima del 90 % con confianza alta) frente a dejarlos
-   pendientes. Si no mejora, no se activa.
+- ✅ Detección de instalación, servicio, versión y modelos; elección y recomendación de modelo (Gemma 3).
+- ✅ Instalación guiada (página oficial), inicio de la app oficial, descarga con progreso real, cancelación y reanudación.
+- ✅ Clasificación de pendientes con validación, criterio de confianza y revisión; organización de categorías.
+- ✅ Probado con Ollama 0.40.6 y `gemma3:4b` reales (clasificación y duplicados).
+- ⛔ Instalación de Ollama y descarga de modelo reales: no probadas aquí (requieren tu consentimiento; ya estaban instalados).
 
 ## Riesgos
 
@@ -85,3 +87,4 @@ No forma parte de la primera entrega. Plan:
 | Notion guarda importes en coma flotante | Errores de redondeo | Conversión única a céntimos con validación |
 | El atajo escribe la categoría como texto/selección | Categorías sin catálogo | Resolución por nombre normalizado y alias; categorías implícitas |
 | Instalador sin firmar | Aviso de SmartScreen | Documentado; firma pendiente |
+| La IA se equivoca con confianza alta | Propuesta incorrecta | Lista cerrada, validación, coherencia con el historial y aplicación siempre tras revisión |

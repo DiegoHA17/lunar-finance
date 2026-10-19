@@ -9,7 +9,7 @@ import { ruleImpact } from '../services/rules'
 import { upsertRule } from '../state/actions'
 import { useApp } from '../state/store'
 import { CategorySelect } from '../ui/CategorySelect'
-import { Dialog, Field, Notice } from '../ui/primitives'
+import { Dialog, Field } from '../ui/primitives'
 
 const KINDS: MovementKind[] = ['expense', 'income', 'refund']
 
@@ -110,10 +110,10 @@ export function RuleDialog({ initial, onClose, title }: { initial: Rule; onClose
             <CategorySelect id="rule-cat" value={rule.categoryId || null} kind={null} categories={categories} noneLabel="Elige una categoría" onChange={(id) => set('categoryId', id ?? '')} />
           </Field>
           <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-            <Field label="Prioridad" htmlFor="rule-priority" error={submitted ? errors.priority : undefined} hint="Si varias reglas coinciden, gana la de mayor prioridad.">
+            <Field label="Prioridad" htmlFor="rule-priority" error={submitted ? errors.priority : undefined}>
               <input id="rule-priority" type="number" min={0} max={MAX_PRIORITY} step={1} className="field num" value={rule.priority} onChange={(e) => set('priority', Number(e.target.value))} />
             </Field>
-            <Field label="Excepciones" htmlFor="rule-ex" hint="Si el texto contiene alguna, no se aplica. Separadas por comas.">
+            <Field label="Excepciones" htmlFor="rule-ex" hint="Separadas por comas">
               <input id="rule-ex" className="field" value={exceptions} onChange={(e) => setExceptions(e.target.value)} placeholder="prime, devolución" />
             </Field>
           </div>
@@ -156,7 +156,7 @@ export function RuleDialog({ initial, onClose, title }: { initial: Rule; onClose
               </div>
               <label className="flex items-center gap-2 text-[13.5px]">
                 <input type="checkbox" checked={rule.accentSensitive} onChange={(e) => set('accentSensitive', e.target.checked)} />
-                Distinguir acentos (por defecto «cafe» y «café» coinciden)
+                Distinguir acentos
               </label>
             </div>
           </details>
@@ -167,17 +167,13 @@ export function RuleDialog({ initial, onClose, title }: { initial: Rule; onClose
         </div>
 
         <aside className="flex flex-col gap-3 rounded-lg bg-surface-2 p-4 text-[13px]">
-          <h3 className="font-semibold text-ink">Efecto de la regla</h3>
+          <h3 className="font-semibold text-ink">Coincidencias</h3>
           {impact ? (
             <>
               <p className="text-ink-2">
-                Propondría <strong className="text-ink">{target?.name ?? 'una categoría'}</strong> para <strong className="num text-ink">{impact.pending.length}</strong> movimiento(s) sin categoría.
+                <strong className="num text-ink">{impact.pending.length}</strong> sin categoría
               </p>
-              {impact.conflicting.length > 0 && (
-                <Notice kind="info">
-                  {impact.conflicting.length} movimiento(s) ya clasificados de otra forma también coinciden. <strong>No se cambiarán</strong>: las reglas solo proponen categoría a los pendientes.
-                </Notice>
-              )}
+              {impact.conflicting.length > 0 && <p className="text-mist">{impact.conflicting.length} ya clasificados de otra forma (no se modifican)</p>}
               {impact.pending.slice(0, 5).map((m) => (
                 <div key={m.id} className="truncate text-mist">
                   {m.description}
@@ -185,15 +181,15 @@ export function RuleDialog({ initial, onClose, title }: { initial: Rule; onClose
               ))}
             </>
           ) : (
-            <p className="text-mist">Escribe un texto para ver a qué movimientos afectaría.</p>
+            <p className="text-mist">—</p>
           )}
           <div className="mt-auto flex flex-col gap-1">
             <label htmlFor="rule-test" className="text-ink-2">
-              Probar con un texto
+              Probar
             </label>
             <input id="rule-test" className="field" value={test} onChange={(e) => setTest(e.target.value)} placeholder="Compra MERCADONA 1234" />
             {test && (
-              <p className={textMatches(candidate, test) ? 'text-positive' : 'text-mist'}>{textMatches(candidate, test) ? 'Coincide (sin contar condiciones)' : 'No coincide'}</p>
+              <p className={textMatches(candidate, test) ? 'text-positive' : 'text-mist'}>{textMatches(candidate, test) ? 'Coincide' : 'No coincide'}</p>
             )}
           </div>
         </aside>

@@ -208,7 +208,7 @@ pub async fn run(token: Result<String, AppError>, make_client: impl Fn(String) -
 
     let token = match token {
         Ok(t) => {
-            steps.push(step("token", "Token guardado", StepStatus::Ok, "Hay un token en el Administrador de credenciales de Windows."));
+            steps.push(step("token", "Token guardado", StepStatus::Ok, "Hay un token en el almacén seguro del sistema."));
             t
         }
         Err(e) => {

@@ -2,7 +2,7 @@
  * Utilidad de desarrollo: genera informes PDF de muestra con los datos de DEMOSTRACIÓN para revisarlos a ojo.
  * Solo se ejecuta con `npm run sample:pdf` (variable LUNAR_SAMPLE_PDF con la carpeta de salida).
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { it } from 'vitest'
 import { CategoryIndex } from '../domain/categories'
@@ -27,7 +27,8 @@ it.skipIf(!out)('genera PDF de muestra', async () => {
     ['detalle-mes', month, 'full'],
     ['resumen-anio', periodContaining('year', today()), 'summary'],
   ] as const) {
-    const bytes = await renderReportPdf(buildReport(data.movements, index, period, detail, ctx), index)
+    const logo = new Uint8Array(readFileSync(new URL('../assets/brand/lunar-logo-64.png', import.meta.url)))
+    const bytes = await renderReportPdf(buildReport(data.movements, index, period, detail, ctx), index, logo)
     writeFileSync(join(out!, `${name}.pdf`), bytes)
   }
 })

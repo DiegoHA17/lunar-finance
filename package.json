@@ -1,7 +1,7 @@
 {
   "name": "lunar-finance",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "tauri": "tauri",
-    "check": "tsc -b && oxlint && vitest run && cd src-tauri && cargo test"
+    "check": "tsc -b && oxlint && vitest run && cd src-tauri && cargo test",
+    "release": "node scripts/build-release.mjs",
+    "release:manifest": "node scripts/make-release-manifest.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",

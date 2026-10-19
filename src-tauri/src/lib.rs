@@ -3,6 +3,7 @@
 //! Responsabilidades: guardar el token de forma segura, hablar con la API de Notion, persistir la configuración y
 //! los documentos locales sin secretos, y guardar exportaciones. La lógica de dominio vive en TypeScript.
 
+mod ai;
 mod commands;
 mod config;
 mod credentials;
@@ -40,6 +41,8 @@ pub fn run() {
                 base_url,
                 data_dir,
                 write_lock: std::sync::Mutex::new(()),
+                ollama_url: ai::ollama::DEFAULT_URL.to_string(),
+                ai_pull: std::sync::Mutex::new(None),
             });
             Ok(())
         })
@@ -62,6 +65,13 @@ pub fn run() {
             commands::store_write,
             commands::export_save,
             commands::open_notion_url,
+            commands::ai_status,
+            commands::ai_start,
+            commands::ai_pull,
+            commands::ai_cancel_pull,
+            commands::ai_classify,
+            commands::ai_review_duplicates,
+            commands::open_ollama_download,
         ])
         .run(tauri::generate_context!())
         .expect("error al iniciar Lunar");

@@ -1,5 +1,10 @@
 import type {
+  AiClassifyInput,
+  AiStatus,
+  AiSuggestion,
   AppConfig,
+  DuplicatePair,
+  PullEvent,
   DiagnosticReport,
   PageDto,
   PropValue,
@@ -41,4 +46,17 @@ export interface Host {
   openNotionUrl(url: string): Promise<void>
   readPreferences(): Promise<unknown | null>
   writePreferences(value: unknown): Promise<void>
+  /** IA local. `null` si el anfitrión no la admite (navegador). */
+  readonly ai: AiHost | null
+}
+
+/** Operaciones de IA local (Ollama). Solo hablan con el propio equipo. */
+export interface AiHost {
+  status(): Promise<AiStatus>
+  start(): Promise<AiStatus>
+  pull(model: string, onEvent: (e: PullEvent) => void): Promise<boolean>
+  cancelPull(): Promise<void>
+  classify(model: string, input: AiClassifyInput): Promise<AiSuggestion>
+  reviewDuplicates(model: string, names: string[]): Promise<DuplicatePair[]>
+  openDownloadPage(): Promise<void>
 }

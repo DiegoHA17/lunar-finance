@@ -18,6 +18,7 @@ import { type ApplyOutcome, type PreviewItem, applyProposals } from '../services
 import * as migrationSvc from '../services/migration'
 import * as movementsSvc from '../services/movements'
 import * as rulesSvc from '../services/rules'
+import { OllamaProvider, aggregatePull, chooseModel } from '../services/ai'
 import { loadAll, remapMovements } from '../services/sync'
 import { DEFAULT_PREFS, type DataMode, EMPTY_DATA, type Preferences, type Screen, type Toast, store } from './store'
 
@@ -68,6 +69,10 @@ function parsePrefs(raw: unknown): Preferences {
     mode: p.mode === 'demo' ? 'demo' : 'notion',
     periodKind: p.periodKind === 'week' || p.periodKind === 'quarter' || p.periodKind === 'year' ? p.periodKind : 'month',
     welcomed: p.welcomed === true,
+    ai: {
+      enabled: p.ai?.enabled === true,
+      model: typeof p.ai?.model === 'string' && p.ai.model.length <= 100 ? p.ai.model : null,
+    },
   }
 }
 
@@ -96,6 +101,8 @@ export async function boot() {
   store.set({ native: Boolean(native), prefs, mode })
   await reloadSetup()
   store.set({ booted: true })
+  // La IA se comprueba en segundo plano: nunca retrasa ni bloquea el arranque.
+  if (host.ai) void refreshAi()
   if (isReady()) await refresh()
 }
 
@@ -117,7 +124,7 @@ export function isReady(): boolean {
 
 export async function switchMode(mode: DataMode) {
   if (mode === 'notion' && !native) {
-    toast({ kind: 'info', message: 'La conexión con Notion solo está disponible en la aplicación de escritorio.' })
+    toast({ kind: 'info', message: 'Notion solo está disponible en la aplicación de escritorio.' })
     return
   }
   store.set({ mode, data: EMPTY_DATA, rules: [], rulesNotice: null })
@@ -304,7 +311,7 @@ export async function setCategoryArchived(current: Category, archived: boolean):
     const cat = await categoriesSvc.setArchived(backend(), s.config, new Map(s.data.categoryPages), current, archived)
     replaceCategory(cat)
     await refreshCategoryPages()
-    toast({ kind: 'success', message: archived ? `«${cat.name}» archivada. Sigue en el histórico.` : `«${cat.name}» reactivada.` })
+    toast({ kind: 'success', message: archived ? `«${cat.name}» archivada.` : `«${cat.name}» reactivada.` })
     return true
   } catch (e) {
     toastError(e)
@@ -353,7 +360,7 @@ export async function saveToken(token: string): Promise<boolean> {
   try {
     const r = await backend().setToken(token)
     store.set({ tokenConfigured: r.configured })
-    toast({ kind: 'success', message: 'Token guardado en el Administrador de credenciales de Windows.' })
+    toast({ kind: 'success', message: 'Token guardado.' })
     return true
   } catch (e) {
     toastError(e, 'No se guardó el token')
@@ -365,7 +372,7 @@ export async function clearToken() {
   try {
     const r = await backend().clearToken()
     store.set({ tokenConfigured: r.configured, data: EMPTY_DATA })
-    toast({ kind: 'info', message: 'Token eliminado de este equipo.' })
+    toast({ kind: 'info', message: 'Token eliminado.' })
   } catch (e) {
     toastError(e)
   }
@@ -422,5 +429,96 @@ export async function fetchSchema(dataSourceId: string) {
 
 /** Dónde se guardan los cambios, para que los avisos no digan «en Notion» en modo demostración. */
 export function savedWhere(): string {
-  return store.get().mode === 'demo' ? ' (demostración: no se guarda en Notion)' : ' en Notion'
+  return store.get().mode === 'demo' ? ' (demo)' : ''
+}
+
+// ── IA local (Ollama) ─────────────────────────────────────────────────────────────────────────────────────────
+
+function setAi(patch: Partial<import('./store').AiUiState>) {
+  store.set((s) => ({ ai: { ...s.ai, ...patch } }))
+}
+
+export async function refreshAi() {
+  if (!host.ai) return
+  setAi({ checking: true })
+  try {
+    setAi({ status: await host.ai.status() })
+  } catch (e) {
+    toastError(e, 'No se pudo comprobar Ollama')
+  } finally {
+    setAi({ checking: false })
+  }
+}
+
+export async function startAi() {
+  if (!host.ai) return
+  setAi({ starting: true })
+  try {
+    const status = await host.ai.start()
+    setAi({ status })
+    if (!status.running) toast({ kind: 'error', message: 'Ollama no ha arrancado.', hint: 'Ábrelo desde el menú Inicio y pulsa «Comprobar».' })
+  } catch (e) {
+    toastError(e, 'No se pudo abrir Ollama')
+  } finally {
+    setAi({ starting: false })
+  }
+}
+
+export async function setAiPrefs(patch: Partial<Preferences['ai']>) {
+  await setPrefs({ ai: { ...store.get().prefs.ai, ...patch } })
+}
+
+/** Descarga un modelo con el progreso real que informa Ollama. Solo tras la confirmación del usuario. */
+export async function pullModel(model: string) {
+  if (!host.ai || store.get().ai.pull?.state === 'running') return
+  const layers = new Map<string, { completed: number; total: number }>()
+  setAi({ pull: { model, state: 'running', status: 'Preparando…', completed: 0, total: 0, error: null } })
+  try {
+    const done = await host.ai.pull(model, (e) => {
+      if (e.kind === 'progress') layers.set(e.digest, { completed: e.completed, total: e.total })
+      const agg = aggregatePull(layers, e.kind === 'done' ? 'Completado' : e.status)
+      setAi({ pull: { model, state: 'running', status: agg.status, completed: agg.completed, total: agg.total, error: null } })
+    })
+    const cur = store.get().ai.pull
+    setAi({ pull: cur && { ...cur, state: done ? 'done' : 'cancelled' } })
+    if (done) {
+      await setAiPrefs({ model, enabled: true })
+      toast({ kind: 'success', message: `${model} listo.` })
+    }
+  } catch (e) {
+    const cur = store.get().ai.pull
+    setAi({ pull: cur && { ...cur, state: 'error', error: LunarError.from(e) } })
+  }
+  await refreshAi()
+}
+
+export async function cancelPull() {
+  try {
+    await host.ai?.cancelPull()
+  } catch (e) {
+    toastError(e)
+  }
+}
+
+export async function openOllamaDownload() {
+  try {
+    await host.ai?.openDownloadPage()
+  } catch (e) {
+    toastError(e)
+  }
+}
+
+/** Proveedor de IA activo, o `null` si está desactivada o no disponible (se usan solo las reglas). */
+export function aiProvider(): OllamaProvider | null {
+  const s = store.get()
+  if (!host.ai || !s.prefs.ai.enabled) return null
+  const model = chooseModel(s.ai.status, s.prefs.ai.model)
+  return model ? new OllamaProvider(host.ai, model) : null
+}
+
+export async function reviewDuplicatesWithAi(names: string[]) {
+  const s = store.get()
+  const model = chooseModel(s.ai.status, s.prefs.ai.model)
+  if (!host.ai || !s.prefs.ai.enabled || !model) return []
+  return host.ai.reviewDuplicates(model, names)
 }

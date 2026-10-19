@@ -5,31 +5,27 @@
  */
 
 import { cx } from './cx'
-import { useLayoutEffect, useRef, useState } from 'react'
-import { niceCeil } from '../domain/scale'
+import { useCallback, useRef, useState } from 'react'
+import { formatTick, niceScale } from '../domain/scale'
 import { formatDateShort } from '../domain/dates'
 import { formatBasisPoints, formatEUR } from '../domain/money'
 import type { CategoryRow, Timeline } from '../domain/stats'
 import { CategoryLabel } from './primitives'
 
+/** Ancho del contenedor. Ref de callback: si el elemento se desmonta y vuelve a montarse (al alternar la vista de
+ * tabla), el observador se engancha al elemento nuevo y no al antiguo. */
 function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
   const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    const el = ref.current
+  const observer = useRef<ResizeObserver | null>(null)
+  const ref = useCallback((el: T | null) => {
+    observer.current?.disconnect()
+    observer.current = null
     if (!el) return
     setWidth(el.clientWidth)
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width))
-    ro.observe(el)
-    return () => ro.disconnect()
+    observer.current = new ResizeObserver(([e]) => setWidth(e.contentRect.width))
+    observer.current.observe(el)
   }, [])
   return [ref, width] as const
-}
-
-function compactEUR(cents: number): string {
-  const e = cents / 100
-  if (Math.abs(e) >= 1000) return `${(e / 1000).toLocaleString('es-ES', { maximumFractionDigits: 1 })} mil €`
-  return `${e.toLocaleString('es-ES', { maximumFractionDigits: 0 })} €`
 }
 
 /** Barra vertical con el extremo de datos redondeado y la base recta. */
@@ -47,14 +43,17 @@ export function SpendColumns({ timeline, height = 200 }: { timeline: Timeline; h
   const [asTable, setAsTable] = useState(false)
   const points = timeline.points
   const values = points.map((p) => p.netExpenseCents)
-  const top = niceCeil(Math.max(0, ...values))
-  const bottom = Math.min(0, ...values) < 0 ? -niceCeil(-Math.min(...values)) : 0
-  const left = 56
+  // Escala compartida con el PDF; el margen izquierdo se ajusta a la etiqueta más larga.
+  const scale = niceScale(Math.min(0, ...values), Math.max(0, ...values))
+  const top = scale.max
+  const bottom = scale.min
+  const tickLabels = scale.ticks.map((t) => formatTick(t, scale.step))
+  const left = Math.max(...tickLabels.map((l) => l.length)) * 6.4 + 14
   const padTop = 10
   const padBottom = 24
   const plotW = Math.max(0, width - left - 4)
   const plotH = height - padTop - padBottom
-  const span = top - bottom || 1
+  const span = top - bottom
   const y = (v: number) => padTop + ((top - v) / span) * plotH
   const slot = points.length ? plotW / points.length : 0
   const barW = Math.max(2, Math.min(24, slot * 0.64))
@@ -97,15 +96,12 @@ export function SpendColumns({ timeline, height = 200 }: { timeline: Timeline; h
         <div ref={ref} className="relative" style={{ height }} onMouseLeave={() => setActive(null)}>
           {width > 0 && (
             <svg width={width} height={height} role="img" aria-label={`Gráfico de columnas del gasto neto por ${GRAN_LABEL[timeline.granularity]}`}>
-              {[top, top / 2, 0, ...(bottom < 0 ? [bottom] : [])].map((v) => (
+              {scale.ticks.map((v, i) => (
                 <g key={v}>
                   <line x1={left} x2={width - 4} y1={y(v)} y2={y(v)} stroke={v === 0 ? 'var(--line-strong)' : 'var(--chart-grid)'} strokeWidth="1" />
-                  {/* Una etiqueta demasiado cerca de la del cero se omite (la línea se mantiene). */}
-                  {(v === 0 || Math.abs(y(v) - y(0)) >= 14) && (
-                    <text x={left - 8} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--mist)" className="num">
-                      {compactEUR(v)}
-                    </text>
-                  )}
+                  <text x={left - 8} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--mist)" className="num">
+                    {tickLabels[i]}
+                  </text>
                 </g>
               ))}
               {points.map((p, i) => {
@@ -182,10 +178,9 @@ export function SpendColumns({ timeline, height = 200 }: { timeline: Timeline; h
   )
 }
 
-/** Ranking horizontal de categorías: nombre, barra proporcional, importe y parte del total. */
+/** Ranking de categorías. La barra representa la parte del total (igual que en el PDF). */
 export function CategoryBars({ rows, limit, onSelect }: { rows: CategoryRow[]; limit?: number; onSelect?: (row: CategoryRow) => void }) {
   const shown = limit ? rows.slice(0, limit) : rows
-  const max = Math.max(1, ...shown.map((r) => r.netCents))
   return (
     <ul className="flex flex-col">
       {shown.map((r) => {
@@ -195,7 +190,7 @@ export function CategoryBars({ rows, limit, onSelect }: { rows: CategoryRow[]; l
               <CategoryLabel name={r.name} color={r.color} icon={r.icon} status={r.status} />
             </span>
             <span className="hidden h-2 min-w-[60px] flex-1 overflow-hidden rounded-full bg-[var(--chart-bar-soft)] sm:block" aria-hidden>
-              <span className="block h-full rounded-full bg-[var(--chart-bar)]" style={{ width: `${Math.max(0, (r.netCents / max) * 100)}%` }} />
+              <span className="block h-full rounded-full bg-[var(--chart-bar)]" style={{ width: `${(r.shareBp ?? 0) / 100}%` }} />
             </span>
             <span className="num w-24 shrink-0 text-right font-medium">{formatEUR(r.netCents)}</span>
             <span className="num w-14 shrink-0 text-right text-[12.5px] text-mist">{r.shareBp === null ? '—' : formatBasisPoints(r.shareBp)}</span>

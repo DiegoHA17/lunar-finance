@@ -4,7 +4,7 @@ import { CategoryIndex } from '../domain/categories'
 import { cat } from '../test/factories'
 import type { PageDto, SchemaDto, SourceConfig } from './contracts'
 import { CATEGORY_FIELDS, MOVEMENT_FIELDS, suggestMapping } from './fieldSpecs'
-import { MappingError, buildCategories, categoryWrite, expectedValues, movementWrites, pageToCategory, pageToMovement, resolveKind } from './mapping'
+import { MappingError, buildCategories, categoryWrite, expectedValues, movementWrites, pageToCategory, pageToMovement, resolveKind, variantsOf } from './mapping'
 
 const src: SourceConfig = {
   dataSourceId: 'ds',
@@ -105,6 +105,21 @@ describe('escrituras', () => {
       m: { type: 'select', value: 'Tarjeta' },
       o: { type: 'select', value: 'Manual' },
     })
+  })
+
+  it('reutiliza la variante exacta que ya usan los movimientos (p. ej. con espacio final del atajo)', () => {
+    const pages = [
+      page({ t: { type: 'select', value: 'Gasto ' }, c: { type: 'select', value: 'Alimentación ' } }),
+      page({ t: { type: 'select', value: 'Gasto ' }, c: { type: 'select', value: 'Alimentación ' } }),
+      page({ t: { type: 'select', value: 'Gasto' }, c: { type: 'select', value: 'Ocio' } }),
+    ]
+    const variants = { kind: variantsOf(pages, src.fields.kind), category: variantsOf(pages, src.fields.category) }
+    expect(variants.kind.get('gasto')).toBe('Gasto ')
+    const w = movementWrites(src, { kind: 'expense', category: food }, null, variants)
+    expect(w.t).toEqual({ type: 'select', value: 'Gasto ' })
+    expect(w.c).toEqual({ type: 'select', value: 'Alimentación ' })
+    // Sin datos previos, se escribe el nombre del catálogo.
+    expect(movementWrites(src, { category: cat('Viajes') }, null, variants).c).toEqual({ type: 'select', value: 'Viajes' })
   })
 
   it('no escribe en fórmulas ni en fechas de creación', () => {

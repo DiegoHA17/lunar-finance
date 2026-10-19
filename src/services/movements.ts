@@ -6,7 +6,7 @@ import { findDuplicatesOf } from '../domain/movements'
 import type { Category, ClassificationOrigin, Movement } from '../domain/types'
 import type { Backend } from '../infra/backend'
 import { type AppConfig, LunarError, type PageDto } from '../infra/contracts'
-import { MappingError, type MovementDraft, expectedValues, movementWrites } from '../infra/mapping'
+import { MappingError, type MovementDraft, type WriteVariants, expectedValues, movementWrites, variantsOf } from '../infra/mapping'
 
 export interface WriteContext {
   backend: Backend
@@ -18,6 +18,13 @@ export interface WriteContext {
 function mappingError(e: unknown): never {
   if (e instanceof MappingError) throw new LunarError({ code: 'config', message: e.message, hint: 'Revisa el mapeo en Ajustes → Conexión con Notion.' })
   throw e
+}
+
+/** Variantes exactas que ya usan tus movimientos (respeta lo que escribe el atajo, p. ej. «Gasto »). */
+function writeVariants(ctx: WriteContext): WriteVariants {
+  const f = ctx.config.notion.movements?.fields ?? {}
+  const pages = [...ctx.pages.values()]
+  return { kind: variantsOf(pages, f.kind), category: variantsOf(pages, f.category), paymentMethod: variantsOf(pages, f.paymentMethod) }
 }
 
 function sourceOf(ctx: WriteContext) {
@@ -47,7 +54,7 @@ export async function updateMovement(
   validateDraft(draft)
   let writes
   try {
-    writes = movementWrites(src, draft, origin)
+    writes = movementWrites(src, draft, origin, writeVariants(ctx))
   } catch (e) {
     mappingError(e)
   }
@@ -92,7 +99,7 @@ export async function createMovement(ctx: WriteContext, draft: MovementDraft, ex
   }
   let writes
   try {
-    writes = movementWrites(src, draft, draft.category ? opts.origin : null)
+    writes = movementWrites(src, draft, draft.category ? opts.origin : null, writeVariants(ctx))
   } catch (e) {
     mappingError(e)
   }

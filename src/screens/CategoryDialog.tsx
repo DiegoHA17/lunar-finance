@@ -82,7 +82,7 @@ export function CategoryDialog({
           <input id="cat-name" className="field" value={draft.name} autoFocus onChange={(e) => setDraft({ ...draft, name: e.target.value })} aria-invalid={submitted && Boolean(errors.name)} />
         </Field>
         {renamed && (
-          <Notice kind="info">«{category!.name}» se guardará como alias: los movimientos antiguos con ese nombre seguirán asociados a esta categoría sin modificarlos.</Notice>
+          <Notice kind="info">«{category!.name}» se conservará como alias.</Notice>
         )}
         <fieldset>
           <legend className="mb-1 text-[13px] font-medium text-ink-2">Tipo</legend>
@@ -133,7 +133,7 @@ export function CategoryDialog({
               ))}
           </div>
         </fieldset>
-        <Field label="Alias" htmlFor="cat-alias" error={submitted ? errors.aliases : undefined} hint="Otros nombres con los que aparece en tus movimientos, separados por comas.">
+        <Field label="Alias" htmlFor="cat-alias" error={submitted ? errors.aliases : undefined} hint="Separados por comas">
           <input id="cat-alias" className="field" value={aliasText} onChange={(e) => setAliasText(e.target.value)} placeholder="Súper, Compra semanal" />
         </Field>
         <Field label="Descripción (opcional)" htmlFor="cat-desc">

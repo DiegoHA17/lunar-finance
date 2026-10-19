@@ -45,18 +45,14 @@ function Figures({ summary, comparison }: { summary: Summary; comparison: Compar
       <div className="flex flex-col gap-1 px-6 py-5">
         <span className="text-[13px] text-mist">Gasto neto</span>
         <Money cents={t.netExpenseCents} className="text-[40px] leading-none font-semibold tracking-[-0.02em] text-night [font-variant-numeric:normal]" />
-        <span className="mt-1 text-[12.5px] text-mist">
-          {comparison && comparison.netExpenseChangeBp !== null ? (
-            <>
-              <Delta bp={comparison.netExpenseChangeBp} upIsGood={false} label={`respecto a ${prevName}`} />
-            </>
-          ) : (
-            'Sin periodo anterior con el que comparar'
-          )}
-        </span>
+        {comparison && comparison.netExpenseChangeBp !== null && (
+          <span className="mt-1 text-[12.5px] text-mist">
+            <Delta bp={comparison.netExpenseChangeBp} upIsGood={false} label={`respecto a ${prevName}`} />
+          </span>
+        )}
         {t.refundCents > 0 && (
           <span className="text-[12.5px] text-mist">
-            <Money cents={t.expenseCents} /> en gastos menos <Money cents={t.refundCents} /> devueltos
+            Devoluciones: <Money cents={t.refundCents} />
           </span>
         )}
       </div>
@@ -64,7 +60,6 @@ function Figures({ summary, comparison }: { summary: Summary; comparison: Compar
       <Stat
         label="Balance"
         value={<Money cents={t.balanceCents} signed tone="auto" />}
-        note={<span title="Ingresos menos gasto neto del periodo. No es el saldo de tu cuenta.">Ingresos − gasto neto</span>}
       />
       <Stat
         label="Movimientos"
@@ -111,9 +106,7 @@ export function Dashboard() {
                 Ir al periodo actual
               </button>
             }
-          >
-            Los movimientos que registres con el atajo «Gasto» aparecerán aquí después de actualizar.
-          </EmptyState>
+          />
         ) : (
           <div className="flex flex-col gap-5">
             <Figures summary={summary} comparison={comparison} />
@@ -129,7 +122,7 @@ export function Dashboard() {
                       </button>
                     }
                   >
-                    {pending === 1 ? 'Hay 1 movimiento sin categoría' : `Hay ${pending} movimientos sin categoría`} en este periodo. Cuentan en los totales como «Sin categoría».
+                    {pending === 1 ? '1 movimiento sin categoría' : `${pending} movimientos sin categoría`}
                   </Notice>
                 )}
                 {summary.excluded.length > 0 && (
@@ -141,28 +134,22 @@ export function Dashboard() {
                       </button>
                     }
                   >
-                    {summary.excluded.length === 1 ? '1 movimiento no se incluye' : `${summary.excluded.length} movimientos no se incluyen`} en los totales porque le faltan datos (fecha, importe o tipo).
+                    {summary.excluded.length === 1 ? '1 movimiento fuera de los totales por datos incompletos' : `${summary.excluded.length} movimientos fuera de los totales por datos incompletos`}
                   </Notice>
                 )}
               </div>
             )}
 
-            <section className="panel px-5 pt-4 pb-3">
-              {summary.timeline.meaningful ? (
+            {summary.timeline.meaningful && (
+              <section className="panel px-5 pt-4 pb-3">
                 <SpendColumns timeline={summary.timeline} />
-              ) : (
-                <div>
-                  <h2 className="text-[15px] font-semibold text-night">Evolución del gasto</h2>
-                  <p className="py-6 text-[13px] text-mist">La evolución se muestra cuando hay gastos en al menos dos tramos del periodo.</p>
-                </div>
-              )}
-            </section>
+              </section>
+            )}
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_1fr]">
               <section className="panel px-3 pt-4 pb-3">
                 <div className="mb-2 flex items-baseline justify-between px-2">
                   <h2 className="text-[15px] font-semibold text-night">Gasto por categoría</h2>
-                  <span className="text-[12.5px] text-mist">parte del gasto neto</span>
                 </div>
                 {summary.expenseByCategory.length === 0 ? (
                   <p className="px-2 py-6 text-[13px] text-mist">No hay gastos en este periodo.</p>

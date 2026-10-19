@@ -1,6 +1,7 @@
 //! Gestión del token de la integración de Notion.
 //!
-//! El token se guarda en Windows Credential Manager (protegido por DPAPI) mediante `keyring`. Ningún comando lo
+//! El token se guarda en el almacén seguro del sistema mediante `keyring`: Windows Credential Manager (DPAPI),
+//! Secret Service en Linux (GNOME Keyring, KWallet) o el Llavero en macOS. Ningún comando lo
 //! devuelve a la interfaz: solo se informa de si existe.
 
 use crate::error::{AppError, AppResult, ErrorCode};
@@ -15,13 +16,13 @@ pub trait SecretStore: Send + Sync {
     fn delete(&self) -> AppResult<()>;
 }
 
-/// Almacén real: Windows Credential Manager.
+/// Almacén real del sistema operativo.
 pub struct KeyringStore;
 
 impl KeyringStore {
     fn entry() -> AppResult<keyring::Entry> {
         keyring::Entry::new(SERVICE, ACCOUNT)
-            .map_err(|e| AppError::new(ErrorCode::Internal, "No se pudo abrir el almacén de credenciales de Windows.").detail(e.to_string()))
+            .map_err(|e| AppError::new(ErrorCode::Internal, "No se pudo abrir el almacén seguro de credenciales del sistema.").detail(e.to_string()))
     }
 }
 
@@ -30,7 +31,7 @@ impl SecretStore for KeyringStore {
         match Self::entry()?.get_password() {
             Ok(s) => Ok(Some(s)),
             Err(keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(AppError::new(ErrorCode::Internal, "No se pudo leer el token del Administrador de credenciales de Windows.")
+            Err(e) => Err(AppError::new(ErrorCode::Internal, "No se pudo leer el token del almacén seguro del sistema.")
                 .detail(e.to_string())),
         }
     }
@@ -38,7 +39,7 @@ impl SecretStore for KeyringStore {
     fn set(&self, secret: &str) -> AppResult<()> {
         Self::entry()?
             .set_password(secret)
-            .map_err(|e| AppError::new(ErrorCode::Internal, "No se pudo guardar el token en el Administrador de credenciales de Windows.").detail(e.to_string()))
+            .map_err(|e| AppError::new(ErrorCode::Internal, "No se pudo guardar el token en el almacén seguro del sistema.").detail(e.to_string()))
     }
 
     fn delete(&self) -> AppResult<()> {

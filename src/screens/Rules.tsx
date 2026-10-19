@@ -40,7 +40,6 @@ export function Rules() {
     <>
       <PageHeader
         title="Reglas de clasificación"
-        subtitle="Proponen una categoría para los movimientos que llegan sin ella. Nunca cambian los ya clasificados."
         actions={
           <button className="btn btn-primary" onClick={() => setEditing(emptyRule())} disabled={categories.length === 0}>
             <Plus size={15} /> Nueva regla
@@ -52,7 +51,6 @@ export function Rules() {
           {notice && <Notice kind="warn">{notice}</Notice>}
           {conflicts.length > 0 && (
             <Notice kind="warn">
-              <p className="font-medium">Reglas que conviene revisar</p>
               <ul className="mt-1 list-disc pl-4">
                 {conflicts.map((c) => (
                   <li key={`${c.a.id}-${c.b.id}`}>{c.message}</li>
@@ -68,14 +66,11 @@ export function Rules() {
                   Crear la primera regla
                 </button>
               }
-            >
-              Por ejemplo: si la descripción contiene «mercadona», proponer «Alimentación». También puedes crearlas al corregir la categoría de un movimiento.
-            </EmptyState>
+            />
           ) : (
             <section className="panel overflow-hidden">
               <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
                 <h2 className="text-[15px] font-semibold text-night">Orden de evaluación</h2>
-                <span className="text-[12.5px] text-mist">Gana la de mayor prioridad; a igualdad, la más específica.</span>
               </div>
               <ol>
                 {sorted.map((r) => {
@@ -135,9 +130,6 @@ export function Rules() {
               </ol>
             </section>
           )}
-          <p className="text-[12.5px] text-mist">
-            Las reglas se guardan en este equipo (archivo rules.json en la carpeta de datos de Lunar), no en Notion. Si varias reglas con la misma prioridad y especificidad proponen categorías distintas, el movimiento queda pendiente en lugar de elegirse una al azar.
-          </p>
         </div>
       </DataGate>
       {editing && <RuleDialog initial={editing} onClose={() => setEditing(null)} />}

@@ -31,7 +31,7 @@ export function CatalogSetupDialog({ onClose }: { onClose: () => void }) {
       .then((s) => {
         if (s.parentPageId) {
           setParent((p) => p || s.parentPageId!)
-          setParentHint('Por defecto, la misma página que contiene tu base de datos de gastos.')
+          setParentHint('La página de tu base de datos de gastos')
         }
       })
       .catch(() => setParentHint(null))
@@ -85,7 +85,7 @@ export function CatalogSetupDialog({ onClose }: { onClose: () => void }) {
       {result ? (
         <div className="flex flex-col gap-3">
           <p>
-            Base de datos «Categorías» creada con <strong>{result.created}</strong> categoría(s). Lunar ya la usa como catálogo.
+            Base de datos «Categorías» creada con <strong>{result.created}</strong> categoría(s). Lunar Finance ya la usa como catálogo.
           </p>
           {result.failed.length > 0 && (
             <Notice kind="warn">
@@ -95,15 +95,8 @@ export function CatalogSetupDialog({ onClose }: { onClose: () => void }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="text-[13.5px] text-ink-2">
-            <p>Lunar creará una base de datos nueva llamada «Categorías» con las propiedades Nombre, Tipo, Estado, Color, Icono, Descripción y Alias.</p>
-            <ul className="mt-2 list-disc pl-5">
-              <li>Tus movimientos no se modifican: siguen guardando la categoría como hasta ahora y Lunar los asocia por nombre o alias.</li>
-              <li>El atajo «Gasto» del iPhone sigue funcionando igual.</li>
-              <li>Las categorías nunca se borran: se archivan, y las archivadas siguen apareciendo en el histórico.</li>
-            </ul>
-          </div>
-          <Field label="Página de Notion donde crearla" htmlFor="cat-parent" hint={parentHint ?? 'Pega el enlace de una página compartida con tu integración (la integración necesita la capacidad «Insertar contenido»).'}>
+          <p className="text-[13.5px] text-ink-2">Se creará la base de datos «Categorías». Tus movimientos no se modifican.</p>
+          <Field label="Página de Notion donde crearla" htmlFor="cat-parent" hint={parentHint ?? 'Página compartida con tu integración'}>
             <input id="cat-parent" className="field" value={parent} onChange={(e) => setParent(e.target.value)} placeholder="https://www.notion.so/Finanzas-…" disabled={running} />
           </Field>
           {error && (

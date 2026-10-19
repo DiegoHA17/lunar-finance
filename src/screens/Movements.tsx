@@ -109,7 +109,7 @@ export function Movements() {
     }
   }
 
-  const exportName = `Lunar movimientos ${allDates ? 'todos' : periodSlug(period)}${mode === 'demo' ? ' (demo)' : ''}`
+  const exportName = `Lunar Finance movimientos ${allDates ? 'todos' : periodSlug(period)}${mode === 'demo' ? ' (demo)' : ''}`
 
   return (
     <>
@@ -192,8 +192,8 @@ export function Movements() {
           </div>
 
           {list.length === 0 ? (
-            <EmptyState title={movements.length === 0 ? 'Tu base de datos de movimientos está vacía' : 'Ningún movimiento coincide con estos filtros'}>
-              {movements.length === 0 ? 'Registra un gasto con el atajo o crea uno aquí.' : 'Prueba con otro periodo o quita algún filtro.'}
+            <EmptyState title={movements.length === 0 ? 'Aún no hay movimientos' : 'Ningún movimiento coincide con estos filtros'}>
+              {movements.length === 0 ? null : 'Prueba con otro periodo o quita algún filtro.'}
             </EmptyState>
           ) : (
             <div className="panel overflow-hidden">

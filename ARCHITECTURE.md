@@ -147,13 +147,13 @@ Detalles en [docs/modelo-de-datos.md](docs/modelo-de-datos.md).
 - Las reglas solo **proponen** categorías para movimientos sin categoría. Aplicarlas es una acción explícita con
   vista previa. Nunca se reescriben movimientos ya clasificados de forma silenciosa.
 
-## 9. Diseño preparado para Ollama (no implementado en la v1)
+## 9. IA local (Ollama)
 
-`ClassificationPipeline` encadena proveedores con la interfaz `ClassificationProvider`. Hoy solo existe el
-proveedor de reglas. Un futuro `OllamaProvider` (llamado desde Rust a `http://127.0.0.1:11434`) solo podrá
-devolver una propuesta `{categoryId, confianza, motivo}` que el pipeline valida (categoría existente, activa y
-compatible con el tipo) y que siempre requiere confirmación por debajo del umbral. El origen de cada
-clasificación (`regla`, `ia`, `manual`) se registra cuando la propiedad de origen está configurada.
+Opcional. `src-tauri/src/ai/` habla solo con la API local oficial (`127.0.0.1:11434`): estado, modelos, descarga
+con progreso real (canal IPC) y cancelación, clasificación con salida estructurada (lista cerrada de categorías) y
+revisión de duplicados. `src/services/ai.ts` decide el modelo, aplica el criterio de confianza (confianza declarada
++ coherencia con el historial) y alimenta el mismo `ClassificationPipeline` que las reglas. Sin Ollama, la
+aplicación usa solo reglas. Detalles en [docs/ia.md](docs/ia.md).
 
 ## 10. Decisiones registradas
 
@@ -174,3 +174,6 @@ clasificación (`regla`, `ia`, `manual`) se registra cuando la propiedad de orig
 | D13 | `freezePrototype: false` | `true` rompía la carga en la app empaquetada (una dependencia asigna `toString` en prototipos). La CSP sin red, el IPC acotado y el token fuera de la interfaz son las defensas principales |
 | D14 | Icono oficial con transparencia, sin fondo, y variante pequeña derivada de la misma imagen (ver docs/marca-e-iconos.md) | Fondo cuadrado (innecesario: legible sobre barras claras y oscuras); redibujar una versión simplificada (alteraría la identidad) |
 | D15 | Iconos generados con `sharp` instalado con `--no-save` desde un script del repositorio | Añadir `sharp` como dependencia de desarrollo (solo se usa al cambiar el logotipo) |
+| D16 | «Instalar Ollama» abre la página oficial; «Iniciar» abre `ollama app.exe` de la instalación oficial | Descargar y ejecutar el instalador desde Lunar (más superficie de riesgo y sin ventaja: el instalador oficial ya es por usuario) |
+| D17 | Criterio de confianza de la IA = confianza declarada ≥ 0,85 y sin contradecir el historial | Solo la confianza declarada: en pruebas reales `gemma3:4b` declara 0,95 incluso cuando se equivoca |
+| D18 | Escala de ejes 1-2-5 × 10ⁿ compartida por pantalla y PDF | Topes «redondos» con mitades (2,5 × 10ⁿ) que producían etiquetas inexactas |

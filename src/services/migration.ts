@@ -23,12 +23,11 @@ export function originPropertyPlan(config: AppConfig): MigrationPlan | null {
   return {
     id: 'origin-property',
     title: 'Registrar el origen de cada clasificación',
-    description: 'Añade a tu base de datos de movimientos una propiedad de selección para saber si la categoría la asignó una regla, la IA o tú.',
+    description: 'Registra si la categoría la asignó una regla, la IA o tú.',
     changes: [`Nueva propiedad «${ORIGIN_PROPERTY_NAME}» (selección) con las opciones: ${Object.values(ORIGIN_VALUES).join(', ')}.`],
     consequences: [
       'No se modifica ni se elimina ninguna propiedad existente.',
-      'Los movimientos actuales quedan con el origen vacío («desconocido»), que Lunar trata como manual: nunca los reclasifica.',
-      'El atajo del iPhone sigue funcionando igual: puede ignorar la nueva propiedad.',
+      'El atajo del iPhone no se ve afectado.',
     ],
   }
 }

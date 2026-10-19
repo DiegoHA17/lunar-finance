@@ -19,7 +19,7 @@ function Logo() {
   return (
     <div className="flex items-center gap-2.5 px-1.5 max-[960px]:justify-center max-[960px]:px-0">
       <img src={logo} width={28} height={28} alt="" className="shrink-0 select-none" draggable={false} />
-      <span className="text-[15px] font-semibold tracking-[-0.01em] text-night max-[960px]:hidden">Lunar</span>
+      <span className="text-[15px] font-semibold tracking-[-0.01em] text-night max-[960px]:hidden">Lunar Finance</span>
     </div>
   )
 }

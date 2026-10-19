@@ -1,8 +1,8 @@
 [package]
 name = "lunar"
-version = "0.1.0"
-description = "Lunar — finanzas personales conectadas con Notion"
-authors = ["Diego"]
+version = "0.2.0"
+description = "Lunar Finance — finanzas personales conectadas con Notion"
+authors = ["Diego Herrera Ayuso"]
 license = "UNLICENSED"
 repository = ""
 edition = "2024"
@@ -22,17 +22,32 @@ tauri-plugin-opener = "2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2"
-# HTTP hacia la API de Notion. TLS nativo de Windows (schannel): sin dependencias de compilación extra.
+# HTTP hacia la API de Notion. TLS nativo del sistema: schannel (Windows), OpenSSL (Linux), Security (macOS).
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
-tokio = { version = "1", features = ["time"] }
-# Windows Credential Manager (protegido con DPAPI por el sistema).
-keyring = { version = "3.6", features = ["windows-native"] }
+tokio = { version = "1", features = ["time", "sync", "macros"] }
 log = "0.4"
 tauri-plugin-log = "2"
 
+# Almacén seguro de credenciales de cada sistema operativo.
+[target.'cfg(windows)'.dependencies.keyring]
+version = "3.6"
+features = ["windows-native"]
+
+[target.'cfg(target_os = "linux")'.dependencies.keyring]
+version = "3.6"
+features = ["sync-secret-service", "crypto-rust"]
+
+[target.'cfg(target_os = "macos")'.dependencies.keyring]
+version = "3.6"
+features = ["apple-native"]
+
+[target.'cfg(windows)'.dependencies]
+# RAM y espacio libre para recomendar un modelo de IA (ya presente en el árbol de dependencias de Tauri).
+windows-sys = { version = "0.61", features = ["Win32_System_SystemInformation", "Win32_Storage_FileSystem"] }
+
 [dev-dependencies]
 mockito = "1.7"
-tokio = { version = "1", features = ["time", "macros", "rt-multi-thread"] }
+tokio = { version = "1", features = ["time", "sync", "macros", "rt-multi-thread", "net", "io-util"] }
 tempfile = "3"
 
 [profile.release]

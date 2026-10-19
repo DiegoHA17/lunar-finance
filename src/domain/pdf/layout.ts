@@ -10,13 +10,15 @@
  *   - cabecera y pie con «Página X de N» en todas las páginas.
  */
 
+import { APP_NAME } from '../../app-info'
 import { formatDateLong, formatDateES, formatInstant } from '../dates'
 import { formatBasisPoints, formatEUR } from '../money'
 import type { ReportModel } from '../report'
 import { type CategoryRow, categoryKeyOf, signedCents } from '../stats'
 import type { CategoryIndex } from '../categories'
+import { issueShort } from '../movements'
 import { KIND_LABEL, type Movement, isCounted } from '../types'
-import { niceCeil } from '../scale'
+import { formatTick, niceScale } from '../scale'
 import { toWinAnsi } from './text'
 
 export type RGB = readonly [number, number, number]
@@ -57,6 +59,9 @@ export const COLORS = {
   warnInk: hex('#6f4c12'),
   white: hex('#ffffff'),
 }
+
+/** Posición del logotipo en la cabecera (coordenadas desde arriba). */
+export const LOGO_BOX = { x: PAGE.marginX - 1, y: 27, size: 17 }
 
 export const ROW_H = 18
 const HEADER_H = 20
@@ -227,14 +232,10 @@ function kpis(f: Flow, model: ReportModel) {
   const h = 62
   f.ensure(h + 8)
   const items: { label: string; value: string; sub?: string; color?: RGB }[] = [
-    { label: 'Ingresos', value: formatEUR(t.incomeCents), sub: `${t.incomeCount} movimiento(s)` },
-    {
-      label: 'Gasto neto',
-      value: formatEUR(t.netExpenseCents),
-      sub: t.refundCents > 0 ? `${formatEUR(t.expenseCents)} − ${formatEUR(t.refundCents)} dev.` : `${t.expenseCount} movimiento(s)`,
-    },
-    { label: 'Balance', value: formatEUR(t.balanceCents), sub: 'Ingresos − gasto neto', color: t.balanceCents < 0 ? COLORS.negative : COLORS.positive },
-    { label: 'Movimientos', value: String(t.countedCount), sub: t.excludedCount ? `${t.excludedCount} excluido(s)` : 'incluidos en totales' },
+    { label: 'Ingresos', value: formatEUR(t.incomeCents) },
+    { label: 'Gasto neto', value: formatEUR(t.netExpenseCents), sub: t.refundCents > 0 ? `Devoluciones: ${formatEUR(t.refundCents)}` : undefined },
+    { label: 'Balance', value: formatEUR(t.balanceCents), color: t.balanceCents < 0 ? COLORS.negative : COLORS.positive },
+    { label: 'Movimientos', value: String(t.countedCount), sub: t.excludedCount ? `${t.excludedCount} excluido(s)` : undefined },
   ]
   items.forEach((it, i) => {
     const x = PAGE.marginX + i * (w + gap)
@@ -253,12 +254,14 @@ function comparisonLine(f: Flow, model: ReportModel) {
   if (c.netExpenseChangeBp !== null) parts.push(`gasto neto ${c.netExpenseChangeBp > 0 ? '+' : ''}${formatBasisPoints(c.netExpenseChangeBp)}`)
   if (c.incomeChangeBp !== null) parts.push(`ingresos ${c.incomeChangeBp > 0 ? '+' : ''}${formatBasisPoints(c.incomeChangeBp)}`)
   parts.push(`balance ${formatEUR(c.balanceDiffCents, { signed: true })}`)
-  f.ensure(16)
-  const what = c.partial ? 'Hasta hoy, respecto al mismo tramo del periodo anterior' : 'Respecto al periodo anterior'
-  f.text(PAGE.marginX, f.y + 10, f.fit(`${what} (${formatDateES(c.previousRange.start)} – ${formatDateES(c.previousRange.end)}): ${parts.join(', ')}.`, 8, CONTENT_W), 8, {
-    color: COLORS.muted,
-  })
-  f.y += 16
+  const what = c.partial ? `Hasta el ${formatDateES(c.currentRange.end)}, frente a` : 'Frente a'
+  const lines = f.wrap(`${what} ${formatDateES(c.previousRange.start)} – ${formatDateES(c.previousRange.end)}: ${parts.join(', ')}.`, 8, CONTENT_W)
+  f.ensure(lines.length * 11 + 6)
+  for (const l of lines) {
+    f.text(PAGE.marginX, f.y + 10, l, 8, { color: COLORS.muted })
+    f.y += 11
+  }
+  f.y += 5
 }
 
 function categoryTable(f: Flow, rows: CategoryRow[], totalCents: number, totalLabel: string) {
@@ -288,16 +291,14 @@ function timelineChart(f: Flow, model: ReportModel) {
   const left = PAGE.marginX + 52
   const width = CONTENT_W - 52
   const values = tl.points.map((p) => p.netExpenseCents)
-  const max = niceCeil(Math.max(0, ...values))
-  const rawMin = Math.min(0, ...values)
-  const min = rawMin < 0 ? -niceCeil(-rawMin) : 0
-  const span = max - min || 1
-  const yOf = (v: number) => top + ((max - v) / span) * chartH
-  // Rejilla: máximo y cero.
-  for (const v of [max, min < 0 ? min : max / 2, 0]) {
+  // Misma escala que el panel: cada etiqueta es exactamente el valor de su línea.
+  const scale = niceScale(Math.min(0, ...values), Math.max(0, ...values))
+  const span = scale.max - scale.min
+  const yOf = (v: number) => top + ((scale.max - v) / span) * chartH
+  for (const v of scale.ticks) {
     const y = yOf(v)
     f.ops.push({ t: 'line', x1: left, y1: y, x2: left + width, y2: y, color: v === 0 ? COLORS.faint : COLORS.line, width: v === 0 ? 0.8 : 0.5 })
-    f.text(left - 6, y + 3, formatEUR(Math.round(v)), 6.5, { align: 'right', color: COLORS.muted })
+    f.text(left - 6, y + 3, formatTick(v, scale.step), 6.5, { align: 'right', color: COLORS.muted })
   }
   const n = tl.points.length
   const slot = width / n
@@ -332,23 +333,12 @@ function movementCells(m: Movement, categories: CategoryIndex): Cell[] {
   ]
 }
 
-function notesBlock(f: Flow, notes: string[]) {
-  if (notes.length === 0) return
-  const lines = notes.flatMap((n) => f.wrap(`• ${n}`, 8, CONTENT_W - 8))
-  sectionTitle(f, 'Notas', Math.min(lines.length, 3) * 12)
-  for (const l of lines) {
-    f.ensure(12)
-    f.text(PAGE.marginX + 4, f.y + 9, l, 8, { color: COLORS.muted })
-    f.y += 12
-  }
-}
-
 function crescent(ops: Op[], cx: number, cy: number, r: number, bg: RGB) {
   ops.push({ t: 'circle', x: cx, y: cy, r, color: COLORS.moon })
   ops.push({ t: 'circle', x: cx + r * 0.42, y: cy - r * 0.28, r: r * 0.86, color: bg })
 }
 
-export function layoutReport(model: ReportModel, categories: CategoryIndex, measure: Measure): LaidOutPage[] {
+export function layoutReport(model: ReportModel, categories: CategoryIndex, measure: Measure, opts: { logo?: boolean } = {}): LaidOutPage[] {
   const f = new Flow(measure)
   const { summary } = model
 
@@ -361,14 +351,23 @@ export function layoutReport(model: ReportModel, categories: CategoryIndex, meas
     color: COLORS.muted,
   })
   f.y += 14
-  if (model.demo) {
-    f.ops.push({ t: 'rect', x: PAGE.marginX, y: f.y, w: CONTENT_W, h: 22, color: COLORS.warnBg })
-    f.text(PAGE.marginX + 10, f.y + 14, 'DATOS DE DEMOSTRACIÓN — cifras ficticias, no corresponden a movimientos reales.', 8, { bold: true, color: COLORS.warnInk })
-    f.y += 28
+  // Avisos que afectan a la validez de las cifras (no explicaciones): datos ficticios o consulta incompleta.
+  for (const w of [...(model.demo ? ['DATOS DE DEMOSTRACIÓN (ficticios)'] : []), ...model.warnings]) {
+    f.ops.push({ t: 'rect', x: PAGE.marginX, y: f.y, w: CONTENT_W, h: 20, color: COLORS.warnBg })
+    f.text(PAGE.marginX + 10, f.y + 13, f.fit(w, 8, CONTENT_W - 20, true), 8, { bold: true, color: COLORS.warnInk })
+    f.y += 24
   }
   f.y += 4
   kpis(f, model)
   comparisonLine(f, model)
+
+  if (summary.totals.countedCount === 0 && summary.excluded.length === 0) {
+    f.ensure(30)
+    f.y += 16
+    f.text(PAGE.marginX, f.y, 'Sin movimientos en este periodo.', 10, { color: COLORS.muted })
+    f.y += 10
+  }
+  timelineChart(f, model)
 
   if (summary.expenseByCategory.length > 0 || summary.totals.netExpenseCents !== 0) {
     sectionTitle(f, 'Gasto por categoría', HEADER_H + ROW_H * 2)
@@ -378,14 +377,6 @@ export function layoutReport(model: ReportModel, categories: CategoryIndex, meas
     sectionTitle(f, 'Ingresos por categoría', HEADER_H + ROW_H * 2)
     categoryTable(f, summary.incomeByCategory, summary.totals.incomeCents, 'Total ingresos')
   }
-  if (summary.totals.countedCount === 0 && summary.excluded.length === 0) {
-    f.ensure(30)
-    f.y += 16
-    f.text(PAGE.marginX, f.y, 'No hay movimientos en este periodo.', 10, { color: COLORS.muted })
-    f.y += 10
-  }
-  timelineChart(f, model)
-
   if (model.detail === 'full') {
     const counted = summary.movements.filter(isCounted)
     const cols: Column[] = [
@@ -419,18 +410,17 @@ export function layoutReport(model: ReportModel, categories: CategoryIndex, meas
       summary.excluded.map((m) => [
         { text: m.date ? formatDateES(m.date) : '—' },
         { text: m.description || '(sin descripción)' },
-        { text: m.issues.filter((i) => i.blocking).map((i) => i.message).join(' '), color: COLORS.negative },
+        { text: m.issues.filter((i) => i.blocking).map((i) => issueShort(i.code, m)).join(', '), color: COLORS.negative },
       ]),
     )
   }
 
-  notesBlock(f, model.notes)
-
   // Cabecera y pie (necesitan el número total de páginas).
   const total = f.pages.length
   f.pages.forEach((ops, i) => {
-    crescent(ops, PAGE.marginX + 7, 36, 7, COLORS.white)
-    ops.push({ t: 'text', x: PAGE.marginX + 20, y: 40, text: 'Lunar', size: 11, bold: true, color: COLORS.night })
+    // Con el logotipo oficial (lo dibuja el renderizador en LOGO_BOX) no se dibuja la luna de reserva.
+    if (!opts.logo) crescent(ops, PAGE.marginX + 7, 36, 7, COLORS.white)
+    ops.push({ t: 'text', x: PAGE.marginX + 20, y: 40, text: APP_NAME, size: 11, bold: true, color: COLORS.night })
     ops.push({ t: 'text', x: PAGE.width - PAGE.marginX, y: 40, text: toWinAnsi(model.periodLabel), size: 8, color: COLORS.muted, align: 'right' })
     ops.push({ t: 'line', x1: PAGE.marginX, y1: 52, x2: PAGE.width - PAGE.marginX, y2: 52, color: COLORS.line, width: 0.6 })
     const footY = PAGE.height - 34

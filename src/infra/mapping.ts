@@ -184,22 +184,25 @@ function textWrite(ref: FieldRef, value: string | null, label: string): PropWrit
     case 'rich_text':
       return { type: 'rich_text', value: value ?? '' }
     case 'select':
-      return { type: 'select', value: value && value.trim() ? value.trim() : null }
+      // Valor exacto (sin recortar): puede ser una variante existente como «Gasto ».
+      return { type: 'select', value: value && value.trim() ? value : null }
     case 'status':
-      return { type: 'status', value: value && value.trim() ? value.trim() : null }
+      return { type: 'status', value: value && value.trim() ? value : null }
     default:
-      throw new MappingError(`La propiedad «${ref.name}» (${label}) es de tipo «${ref.kind}» y Lunar no puede escribir en ella.`)
+      throw new MappingError(`La propiedad «${ref.name}» (${label}) es de tipo «${ref.kind}» y Lunar Finance no puede escribir en ella.`)
   }
 }
 
 /** Escritura del vínculo de categoría según el tipo de la propiedad. */
-export function categoryWrite(src: SourceConfig, category: Category | null): [string, PropWrite] {
+export function categoryWrite(src: SourceConfig, category: Category | null, variants?: Variants): [string, PropWrite] {
   const ref = requireRef(src, 'category', 'Categoría')
   if (ref.kind === 'relation') {
     if (category && category.source !== 'notion') throw new MappingError('La relación necesita una categoría del catálogo de Notion.')
     return [ref.id, { type: 'relation', value: category ? [category.id] : [] }]
   }
-  return [ref.id, textWrite(ref, category?.name ?? null, 'Categoría')]
+  // Por nombre: se reutiliza la variante exacta del nombre actual que ya usan tus movimientos (p. ej. con espacio final).
+  const name = category ? (variants?.get(nameKey(category.name)) ?? category.name) : null
+  return [ref.id, textWrite(ref, name, 'Categoría')]
 }
 
 export function originWrite(src: SourceConfig, origin: Exclude<ClassificationOrigin, 'unknown'>): [string, PropWrite] | null {
@@ -227,7 +230,42 @@ export interface MovementDraft {
   paymentMethod: string | null
 }
 
-export function movementWrites(src: SourceConfig, draft: Partial<MovementDraft>, origin: Exclude<ClassificationOrigin, 'unknown'> | null): Record<string, PropWrite> {
+/**
+ * Variante exacta más usada de cada valor (por clave normalizada) en una propiedad de texto o selección.
+ * Si el atajo escribe «Gasto » (con espacio), al escribir se reutiliza esa variante en lugar de crear «Gasto».
+ */
+export type Variants = Map<string, string>
+
+export function variantsOf(pages: Iterable<PageDto>, ref: FieldRef | undefined): Variants {
+  const counts = new Map<string, Map<string, number>>()
+  if (!ref) return new Map()
+  for (const p of pages) {
+    const raw = textOf(p.properties[ref.id]?.value ?? null)
+    if (!raw) continue
+    const k = nameKey(raw)
+    const m = counts.get(k) ?? new Map<string, number>()
+    m.set(raw, (m.get(raw) ?? 0) + 1)
+    counts.set(k, m)
+  }
+  const out: Variants = new Map()
+  for (const [k, m] of counts) out.set(k, [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0])
+  return out
+}
+
+export interface WriteVariants {
+  kind?: Variants
+  category?: Variants
+  paymentMethod?: Variants
+}
+
+const pick = (v: Variants | undefined, value: string) => v?.get(nameKey(value)) ?? value
+
+export function movementWrites(
+  src: SourceConfig,
+  draft: Partial<MovementDraft>,
+  origin: Exclude<ClassificationOrigin, 'unknown'> | null,
+  variants: WriteVariants = {},
+): Record<string, PropWrite> {
   const w: Record<string, PropWrite> = {}
   if (draft.description !== undefined) {
     const ref = requireRef(src, 'description', 'Descripción')
@@ -245,16 +283,16 @@ export function movementWrites(src: SourceConfig, draft: Partial<MovementDraft>,
   }
   if (draft.kind !== undefined) {
     const ref = requireRef(src, 'kind', 'Tipo')
-    w[ref.id] = textWrite(ref, kindLabel(draft.kind, src.valueMap), 'Tipo')
+    w[ref.id] = textWrite(ref, pick(variants.kind, kindLabel(draft.kind, src.valueMap)), 'Tipo')
   }
   if (draft.category !== undefined) {
-    const [id, write] = categoryWrite(src, draft.category)
+    const [id, write] = categoryWrite(src, draft.category, variants.category)
     w[id] = write
   }
   if (draft.paymentMethod !== undefined && src.fields.paymentMethod) {
     const ref = src.fields.paymentMethod
-    if (ref.kind === 'multi_select') throw new MappingError('El método de pago es de selección múltiple y Lunar no lo modifica.')
-    w[ref.id] = textWrite(ref, draft.paymentMethod, 'Método de pago')
+    if (ref.kind === 'multi_select') throw new MappingError('El método de pago es de selección múltiple y Lunar Finance no lo modifica.')
+    w[ref.id] = textWrite(ref, draft.paymentMethod === null ? null : pick(variants.paymentMethod, draft.paymentMethod), 'Método de pago')
   }
   if (origin) {
     const o = originWrite(src, origin)

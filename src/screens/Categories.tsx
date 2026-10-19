@@ -10,6 +10,7 @@ import { PeriodPicker } from '../ui/PeriodPicker'
 import { CategoryLabel, Money, Notice, PageHeader } from '../ui/primitives'
 import { CatalogSetupDialog } from './CatalogSetupDialog'
 import { CategoryDialog } from './CategoryDialog'
+import { OrganizeDialog } from './OrganizeDialog'
 import { useYears } from '../state/hooks'
 import { DataGate } from './DataGate'
 
@@ -102,6 +103,7 @@ export function Categories() {
   const [newKind, setNewKind] = useState<CategoryKind>('expense')
   const [newName, setNewName] = useState('')
   const [setup, setSetup] = useState(false)
+  const [organizing, setOrganizing] = useState(false)
 
   const index = useMemo(() => new CategoryIndex(categories), [categories])
   const summary = useMemo(() => summarize(movements, index, period), [movements, index, period])
@@ -119,16 +121,21 @@ export function Categories() {
         subtitle={`Importes de ${periodLabel(period)}`}
         actions={
           editable && (
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setNewKind('expense')
-                setNewName('')
-                setEditing('new')
-              }}
-            >
-              <Plus size={15} /> Nueva categoría
-            </button>
+            <>
+              <button className="btn" onClick={() => setOrganizing(true)}>
+                Revisar organización
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setNewKind('expense')
+                  setNewName('')
+                  setEditing('new')
+                }}
+              >
+                <Plus size={15} /> Nueva categoría
+              </button>
+            </>
           )
         }
       />
@@ -146,10 +153,7 @@ export function Categories() {
                 )
               }
             >
-              <p className="font-medium text-ink">Aún no tienes un catálogo de categorías.</p>
-              <p>
-                Estas categorías se han deducido de los valores de tus movimientos y son de solo lectura. Crea el catálogo en Notion para editarlas, archivarlas, añadir alias y elegir colores e iconos.
-              </p>
+              Categorías de solo lectura: falta el catálogo en Notion.
             </Notice>
           )}
           {unknown.length > 0 && editable && (
@@ -169,7 +173,7 @@ export function Categories() {
                 </button>
               ))}
             >
-              Hay movimientos con categorías que no están en el catálogo: {unknown.map((u) => `«${u.name}»`).join(', ')}. Créalas con ese nombre (o añádelo como alias de otra) para que se asocien.
+              No catalogadas: {unknown.map((u) => `«${u.name}»`).join(', ')}
             </Notice>
           )}
           <CategoryTable title="Gastos" list={active.filter((c) => c.kind === 'expense')} rows={rows} editable={editable} onEdit={setEditing} />
@@ -177,7 +181,6 @@ export function Categories() {
           {archived.length > 0 && (
             <details className="group">
               <summary className="cursor-pointer py-1 text-[13.5px] font-medium text-ink-2">Archivadas ({archived.length})</summary>
-              <p className="mt-1 mb-3 text-[13px] text-mist">No admiten movimientos nuevos, pero se conservan en los movimientos antiguos y en los informes.</p>
               <CategoryTable title="Archivadas" list={archived} rows={rows} editable={editable} onEdit={setEditing} />
             </details>
           )}
@@ -186,6 +189,17 @@ export function Categories() {
       </DataGate>
       {editing && <CategoryDialog category={editing === 'new' ? null : editing} defaultKind={newKind} defaultName={newName} onClose={() => setEditing(null)} />}
       {setup && <CatalogSetupDialog onClose={() => setSetup(false)} />}
+      {organizing && (
+        <OrganizeDialog
+          onClose={() => setOrganizing(false)}
+          onCreateCategory={(name, kind) => {
+            setOrganizing(false)
+            setNewName(name)
+            setNewKind(kind)
+            setEditing('new')
+          }}
+        />
+      )}
     </>
   )
 }
