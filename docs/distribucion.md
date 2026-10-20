@@ -40,7 +40,9 @@ interfaz («Acerca de», metadatos del PDF) y una prueba comprueba que `src-taur
 | Plataforma | Formato | Ruta | Estado |
 | --- | --- | --- | --- |
 | Windows x64 | NSIS (por usuario, español) | `release/0.2.0/windows-x64/Lunar Finance_0.2.0_x64-setup.exe` | Generado y verificado |
-| Linux x64 | `.deb`, `.AppImage`, `.rpm` | — | **No generado** (ver abajo) |
+| Linux x64 | Debian/Ubuntu `.deb` | `release/0.2.0/linux-x64/Lunar Finance_0.2.0_amd64.deb` | Generado y verificado |
+| Linux x64 | AppImage | `release/0.2.0/linux-x64/Lunar Finance_0.2.0_amd64.AppImage` | Generado y verificado |
+| Linux x64 | Fedora/openSUSE `.rpm` | `release/0.2.0/linux-x64/Lunar Finance-0.2.0-1.x86_64.rpm` | Generado; metadatos verificados, sin instalar |
 | macOS | `.app`, `.dmg` | — | **No generado** (requiere un Mac) |
 
 Hashes y tamaños: `release/0.2.0/SHA256SUMS` y `release/0.2.0/MANIFEST.md`.
@@ -58,11 +60,23 @@ Hashes y tamaños: `release/0.2.0/SHA256SUMS` y `release/0.2.0/MANIFEST.md`.
 - Si tenías instalada la versión 0.1.0 («Lunar»), desinstálala desde Configuración → Aplicaciones: el nombre del
   producto cambió y se instala en una carpeta nueva. Tus ajustes y el token se conservan (mismo identificador).
 
-### Linux — preparado, no compilado
+### Linux — compilado y verificado (2026-10-19)
 
-La configuración está lista (`src-tauri/tauri.linux.conf.json`: `.deb`, `.AppImage`, `.rpm`; credenciales con Secret
-Service), pero Tauri no permite compilar paquetes de Linux desde Windows. Docker Desktop está instalado en el equipo de
-desarrollo, pero no se pudo usar en esta sesión, así que **no se ha compilado ni probado ningún paquete de Linux**.
+Compilado desde el commit `06ee513` en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
+oficial Ubuntu Base verificada por SHA-256), con Node 22.17.1, Rust 1.99.1 y WebKitGTK 4.1 2.50.4. Configuración:
+`src-tauri/tauri.linux.conf.json` (credenciales con Secret Service).
+
+Comprobaciones:
+
+- `.deb`: paquete `lunar-finance` 0.2.0, `amd64`, mantenedor Diego Herrera Ayuso; `.desktop` «Lunar Finance» válido
+  (`desktop-file-validate`); iconos de 32, 128 y 256 px; binario sin rutas locales y sin bibliotecas sin resolver;
+  se instala con `apt` en Ubuntu 22.04 y abre la ventana «Lunar Finance» (WSLg).
+- AppImage: se extrae correctamente, contiene `.desktop` e icono, y abre la ventana «Lunar Finance».
+- `.rpm`: `lunar-finance` 0.2.0-1, `x86_64`, dependencias y archivos correctos, `rpm -K` OK. No se ha instalado en
+  Fedora/openSUSE.
+- Observaciones menores (no impiden instalar): el `.deb` repite dos dependencias (Tauri añade las suyas a las
+  configuradas); el icono HiDPI se instala en `hicolor/256x256@2`; el `.rpm` declara licencia `UNLICENSED`;
+  `make-release-manifest.mjs` no recoge el `.rpm` automáticamente porque su nombre usa `-0.2.0-` (se copió a mano).
 
 Para generarlos en Ubuntu 22.04+ / Debian 12+:
 
@@ -123,11 +137,12 @@ desarrollada ni probada.**
 | Arranque del ejecutable del instalador | Correcto |
 | Escritura real en Notion | **No probada** (no se modifican datos reales durante las pruebas) |
 | Instalación de Ollama y descarga de modelo reales | **No probadas** (requieren consentimiento; ya estaban instalados) |
-| Paquetes de Linux y macOS | **No generados** |
+| Paquetes de Linux (`.deb`, AppImage, `.rpm`) | Generados; metadatos, contenido, iconos y hashes verificados; `.deb` instalado y AppImage ejecutado en Ubuntu 22.04 (WSL) |
+| Paquetes de macOS | **No generados** (requiere un Mac) |
 
 ## Pendiente
 
-- Paquetes de Linux: compilarlos en Linux (o en un contenedor) con los pasos anteriores y probarlos.
+- Linux: probar el `.rpm` en Fedora/openSUSE y los paquetes en un escritorio Linux real (aquí se probaron en WSL).
 - macOS: compilar en un Mac; firma y notarización si se distribuye.
 - Firma de código del instalador de Windows.
 - Eliminar movimientos desde la app: no implementado (se hace en Notion).

@@ -203,6 +203,13 @@ export interface AiClassifyInput {
   categories: { id: string; name: string }[]
 }
 
+/** Nombre de categoría que no está en el catálogo. Solo se envía el nombre, el tipo y los nombres del catálogo. */
+export interface AiMatchCategoryInput {
+  name: string
+  kind: string
+  categories: { id: string; name: string }[]
+}
+
 export interface AiSuggestion {
   categoryId: string | null
   confidence: number

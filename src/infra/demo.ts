@@ -229,6 +229,13 @@ export class DemoBackend implements Backend {
     mov(addDays(end, -11), 'Mercadona', null, 'Gasto', null, 'Tarjeta')
     mov(addDays(end, -2), 'Discoteca Fabrik', -22, 'Gasto', null, 'Tarjeta')
     mov(addDays(end, -1), 'Renfe Cercanías', 2.6, 'Gasto', null, 'Tarjeta')
+    // Categorías escritas a mano con erratas o fuera del catálogo (revisión de categorías).
+    mov(addDays(end, -4), 'Cine Yelmo', 8.5, 'Gasto', 'Ocios', 'Tarjeta')
+    mov(addDays(end, -13), 'Bolera', 12, 'Gasto', 'Ocios', 'Tarjeta')
+    mov(addDays(end, -5), 'Bar Manolo', 9.8, 'Gasto', 'Restaurante', 'Efectivo')
+    mov(addDays(end, -7), 'Taxi aeropuerto', 31, 'Gasto', 'Transprte', 'Tarjeta')
+    mov(addDays(end, -8), 'Kebab', 7.5, 'Gasto', 'Comida fuera', 'Efectivo')
+    mov(addDays(end, -10), 'Concierto', 25, 'Gasto', 'ocio ', 'Tarjeta')
 
     this.stores.set('rules', {
       version: 1,

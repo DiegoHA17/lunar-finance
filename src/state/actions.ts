@@ -8,12 +8,13 @@ import type { CategoryDraft, SuggestedCategory } from '../domain/categories'
 import type { Rule } from '../domain/classifier/rules'
 import type { Period } from '../domain/periods'
 import type { Category, Movement } from '../domain/types'
-import type { Backend, Host } from '../infra/backend'
+import type { AiHost, Backend, Host } from '../infra/backend'
 import { type AppConfig, LunarError, type PageDto } from '../infra/contracts'
 import { DemoBackend } from '../infra/demo'
 import type { MovementDraft } from '../infra/mapping'
 import { BrowserHost, TauriBackend, TauriHost, isTauri } from '../infra/tauri'
 import * as categoriesSvc from '../services/categories'
+import { type Correction, type CorrectionOutcome, applyCorrections } from '../services/categoryReview'
 import { type ApplyOutcome, type PreviewItem, applyProposals } from '../services/classification'
 import * as migrationSvc from '../services/migration'
 import * as movementsSvc from '../services/movements'
@@ -514,6 +515,23 @@ export function aiProvider(): OllamaProvider | null {
   if (!host.ai || !s.prefs.ai.enabled) return null
   const model = chooseModel(s.ai.status, s.prefs.ai.model)
   return model ? new OllamaProvider(host.ai, model) : null
+}
+
+/** IA para la revisión de categorías, o `null` si está desactivada o no disponible (solo comprobaciones por nombre). */
+export function aiCategoryMatcher(): { ai: AiHost; model: string } | null {
+  const s = store.get()
+  const model = chooseModel(s.ai.status, s.prefs.ai.model)
+  return host.ai && s.prefs.ai.enabled && model ? { ai: host.ai, model } : null
+}
+
+/** Aplica las correcciones de categoría confirmadas e integra las páginas actualizadas. */
+export async function applyCategoryCorrections(corrections: Correction[], onProgress: (done: number, total: number) => void, signal?: AbortSignal): Promise<CorrectionOutcome[]> {
+  const ctx = writeContext()
+  ctx.pages = new Map(ctx.pages)
+  const outcomes = await applyCorrections(ctx, corrections, onProgress, signal)
+  const pages = outcomes.flatMap((o) => (o.page ? [o.page] : []))
+  if (pages.length) mergeMovementPages(pages)
+  return outcomes
 }
 
 export async function reviewDuplicatesWithAi(names: string[]) {

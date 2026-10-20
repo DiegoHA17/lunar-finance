@@ -50,6 +50,7 @@ function fakeAi(reply: (input: Parameters<AiHost['classify']>[1]) => Promise<{ c
       host.lastCategories = input.categories.map((c) => c.name)
       return reply(input)
     },
+    matchCategory: async () => ({ categoryId: null, confidence: 0, reason: '' }),
     reviewDuplicates: async () => [],
     openDownloadPage: async () => {},
   }

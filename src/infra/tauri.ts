@@ -6,7 +6,7 @@
 import { Channel, invoke } from '@tauri-apps/api/core'
 import type { AiHost, Backend, Host, StoreName } from './backend'
 import { LunarError } from './contracts'
-import type { AiClassifyInput, AiStatus, AiSuggestion, DuplicatePair, PullEvent, AppConfig, DiagnosticReport, PageDto, PropValue, PropWrite, PropertySpec, QueryResult, Role, SchemaDto, SourceSummary } from './contracts'
+import type { AiClassifyInput, AiMatchCategoryInput, AiStatus, AiSuggestion, DuplicatePair, PullEvent, AppConfig, DiagnosticReport, PageDto, PropValue, PropWrite, PropertySpec, QueryResult, Role, SchemaDto, SourceSummary } from './contracts'
 
 export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
@@ -90,6 +90,9 @@ export class TauriAi implements AiHost {
   }
   classify(model: string, input: AiClassifyInput) {
     return call<AiSuggestion>('ai_classify', { model, input })
+  }
+  matchCategory(model: string, input: AiMatchCategoryInput) {
+    return call<AiSuggestion>('ai_match_category', { model, input })
   }
   reviewDuplicates(model: string, names: string[]) {
     return call<DuplicatePair[]>('ai_review_duplicates', { model, names })

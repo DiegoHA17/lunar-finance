@@ -58,7 +58,8 @@ Estados: ✅ hecho y verificado · 🟡 hecho, pendiente de verificar con datos 
 
 - ✅ Nombre Lunar Finance, versión única, «Acerca de», instalador Windows verificado con hash y manifiesto.
 - ✅ Notion real verificado en lectura con la configuración existente (diagnóstico completo).
-- ⛔ Paquetes de Linux y macOS: configurados, no compilados (ver docs/distribucion.md).
+- ✅ Paquetes de Linux (`.deb`, AppImage, `.rpm`) compilados en Ubuntu 22.04 (WSL) y verificados.
+- ⛔ macOS: configurado, no compilado (requiere un Mac). Ver docs/distribucion.md.
 
 ## Siguientes pasos
 

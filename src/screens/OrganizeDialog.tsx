@@ -13,6 +13,7 @@ import { aiProvider, reviewDuplicatesWithAi, setCategoryArchived, toastError, up
 import { useApp } from '../state/store'
 import { CategorySelect } from '../ui/CategorySelect'
 import { Dialog, Spinner } from '../ui/primitives'
+import { CategoryReviewSection } from './CategoryReviewSection'
 import { RuleDialog } from './RuleDialog'
 
 interface Pair {
@@ -95,6 +96,8 @@ export function OrganizeDialog({ onClose, onCreateCategory }: { onClose: () => v
   return (
     <Dialog open wide onClose={onClose} title="Revisar organización">
       <div className="flex flex-col gap-6 text-[13.5px]">
+        <CategoryReviewSection index={index} categories={categories} />
+
         <section>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-semibold text-night">Posibles duplicados</h3>

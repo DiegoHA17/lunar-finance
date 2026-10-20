@@ -51,6 +51,16 @@ pub struct ClassifyInput {
     pub categories: Vec<CategoryOption>,
 }
 
+/// Nombre de categoría escrito en un movimiento que no está en el catálogo. Solo viaja el nombre (no importes,
+/// fechas ni descripciones).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchCategoryInput {
+    pub name: String,
+    pub kind: String,
+    pub categories: Vec<CategoryOption>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassifySuggestion {
@@ -211,6 +221,38 @@ impl OllamaClient {
             truncate(&input.kind, 20),
             truncate(input.payment_method.as_deref().unwrap_or("—"), 40),
             input.categories.iter().map(|c| c.name.as_str()).collect::<Vec<_>>().join(", ")
+        );
+        let v = self.chat_json(model, system, &user, schema).await?;
+        validate_suggestion(&v, &input.categories)
+    }
+
+    /// ¿A qué categoría existente corresponde un nombre que no está en el catálogo? Misma lista cerrada y validación
+    /// que `classify`; «NINGUNA» si no es claramente la misma.
+    pub async fn match_category(&self, model: &str, input: &MatchCategoryInput) -> AppResult<ClassifySuggestion> {
+        if input.categories.is_empty() {
+            return Err(AppError::validation("No hay categorías disponibles para proponer."));
+        }
+        let mut names: Vec<String> = input.categories.iter().map(|c| c.name.clone()).collect();
+        names.push(NONE_CATEGORY.to_string());
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "category": { "type": "string", "enum": names },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                "reason": { "type": "string", "maxLength": 160 }
+            },
+            "required": ["category", "confidence", "reason"]
+        });
+        let system = "Revisas el catálogo de categorías de finanzas personales de una persona en España. Te doy un nombre de \
+            categoría escrito a mano que NO existe en el catálogo y la lista de categorías existentes. Elige la categoría \
+            existente solo si el nombre es claramente la misma: errata, plural, abreviatura o sinónimo directo. Si podría \
+            corresponder a varias, es más general o más específica, o no encaja, responde NINGUNA. No inventes categorías. \
+            confidence es tu certeza real entre 0 y 1. reason es una frase breve en español.";
+        let user = format!(
+            "Nombre escrito: «{}»\nTipo: {}\nCategorías existentes: {}",
+            truncate(&input.name, 80),
+            truncate(&input.kind, 20),
+            input.categories.iter().map(|c| truncate(&c.name, 60)).collect::<Vec<_>>().join(", ")
         );
         let v = self.chat_json(model, system, &user, schema).await?;
         validate_suggestion(&v, &input.categories)
@@ -531,6 +573,36 @@ mod tests {
                 .unwrap();
             println!("{d} -> {:?} ({:.2}) {}", r.category_id, r.confidence, r.reason);
         }
+        let mut all = food.clone();
+        all.extend(cats.iter().cloned());
+        for name in ["Restaurante", "Comida fuera", "Varios", "Transprte"] {
+            let r = c.match_category(&model, &MatchCategoryInput { name: name.into(), kind: "Gasto".into(), categories: all.clone() }).await.unwrap();
+            println!("categoría «{name}» -> {:?} ({:.2}) {}", r.category_id, r.confidence, r.reason);
+        }
+    }
+
+    #[tokio::test]
+    async fn match_category_sends_only_names_and_validates_the_answer() {
+        let mut s = Server::new_async().await;
+        let m = s
+            .mock("POST", "/api/chat")
+            .match_body(Matcher::Regex("Ocios".into()))
+            .with_body(chat_reply(r#"{"category":"Ocio","confidence":0.93,"reason":"Plural de Ocio"}"#))
+            .create_async()
+            .await;
+        let input = MatchCategoryInput { name: "Ocios".into(), kind: "Gasto".into(), categories: cats() };
+        let r = OllamaClient::new(&s.url()).match_category("m", &input).await.unwrap();
+        assert_eq!(r.category_id.as_deref(), Some("c2"));
+        m.assert_async().await;
+
+        for content in [r#"{"category":"Diversión","confidence":0.9,"reason":"inventada"}"#, r#"{"category":"Ocio","confidence":2,"reason":"x"}"#] {
+            let mut s = Server::new_async().await;
+            let _m = s.mock("POST", "/api/chat").with_body(chat_reply(content)).create_async().await;
+            assert_eq!(OllamaClient::new(&s.url()).match_category("m", &input).await.unwrap_err().code, ErrorCode::Validation);
+        }
+        let mut s = Server::new_async().await;
+        let _m = s.mock("POST", "/api/chat").with_body(chat_reply(r#"{"category":"NINGUNA","confidence":0.4,"reason":"ambiguo"}"#)).create_async().await;
+        assert_eq!(OllamaClient::new(&s.url()).match_category("m", &input).await.unwrap().category_id, None);
     }
 
     #[tokio::test]

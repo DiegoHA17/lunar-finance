@@ -54,6 +54,37 @@ pendiente; si Ollama deja de responder, el lote se detiene.
 
 ## Organización de categorías (Categorías → Revisar organización)
 
+### Revisión global de categorías («Revisar categorías con IA»)
+
+Recorre **todos** los movimientos cargados y agrupa los nombres de categoría escritos que no están en el catálogo
+(por tipo: gasto o ingreso). Para cada grupo muestra la categoría actual, la propuesta, los movimientos afectados,
+el motivo y el nivel de seguridad, con una casilla para elegirla.
+
+| Nivel | Cuándo | ¿Se marca con «Seleccionar seguras»? |
+| --- | --- | --- |
+| Segura | Único candidato y es un plural/singular («Ocios» → «Ocio», «Restaurante» → «Restaurantes») o una errata de una letra en un nombre de 5 o más letras con la misma inicial («Transprte» → «Transporte») | Sí |
+| Dudosa | Parecido con dudas (nombre corto, errata en la inicial, dos letras), empate entre varias categorías (se listan y eliges tú) o propuesta de la IA | No: revísala |
+| Sin propuesta | No se parece a ninguna categoría del catálogo, o la IA no ve una equivalencia clara | No: puedes elegir una a mano o dejarlo sin cambios |
+
+- Solo se comparan categorías **activas y del mismo tipo** (nunca archivadas ni de ingresos para un gasto). Nombres
+  de 3 letras o que solo difieren en números no se dan por equivalentes.
+- Mayúsculas, tildes y espacios no son errores: esos nombres ya se reconocen y se listan aparte («Variantes de
+  escritura ya reconocidas») sin proponer cambios. Los espacios iniciales y finales ya se ignoran al leer Notion.
+- **IA (opcional)**: si está activada, se consulta solo para los grupos que no son seguros. Recibe únicamente el nombre
+  escrito, el tipo y los nombres del catálogo (`ai_match_category`, mismo cliente local de Ollama, salida estructurada
+  con lista cerrada y validación en Rust y en la interfaz). Sus propuestas son siempre «dudosas»; por debajo del
+  85 % de confianza solo se anotan, sin rellenar la propuesta (con `gemma3:4b` real, «Varios» → «Alimentación» llegó
+  con 80 %). Si contradice una propuesta por nombre, se conserva la del nombre y se anota la discrepancia.
+- Sin Ollama, sin modelo o con la IA desactivada, la revisión funciona igual con las comprobaciones por nombre y la
+  elección manual. Sin catálogo en Notion (categorías implícitas) solo se proponen variantes minoritarias hacia la
+  más usada, sin IA.
+
+**Aplicar correcciones seleccionadas** pide confirmación y, para cada movimiento: comprueba que la categoría de destino
+sigue existiendo, activa y compatible, y que el movimiento sigue sin categoría del catálogo; después escribe **solo la
+propiedad de categoría** (ni importe, fecha, descripción, método de pago ni origen) con control de concurrencia. Un
+fallo no detiene el resto, salvo errores de conexión o permisos; al terminar se informa de lo aplicado, lo fallido y lo
+no intentado. No crea, fusiona ni archiva categorías.
+
 - **Posibles duplicados**: por nombre (plurales, erratas) y, opcionalmente, sinónimos con IA («Comida» y
   «Alimentación»). Acción disponible: archivar una de ellas (con confirmación; conserva el histórico).
 - **No catalogadas**: nombres usados en movimientos que no están en el catálogo. Añadir como alias de una

@@ -2,6 +2,16 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico.
 
+## [Sin publicar]
+
+### Añadido
+- Categorías → Revisar organización → **Revisar categorías con IA**: revisión global de los nombres de categoría de
+  todos los movimientos que no están en el catálogo (erratas, plurales, nombres inventados, empates), con propuesta,
+  movimientos afectados, motivo y seguridad; selección de las seguras, descarte y elección manual; **Aplicar
+  correcciones seleccionadas** con confirmación, que solo cambia la propiedad de categoría e informa de fallos
+  parciales. IA local opcional (`ai_match_category`) con lista cerrada, validación y confianza mínima del 85 %.
+- Datos de demostración con categorías mal escritas para probar la revisión.
+
 ## [0.2.0] — 2026-10-19
 
 ### Corregido

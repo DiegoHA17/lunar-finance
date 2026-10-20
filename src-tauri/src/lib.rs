@@ -70,6 +70,7 @@ pub fn run() {
             commands::ai_pull,
             commands::ai_cancel_pull,
             commands::ai_classify,
+            commands::ai_match_category,
             commands::ai_review_duplicates,
             commands::open_ollama_download,
         ])

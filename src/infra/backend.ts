@@ -1,5 +1,6 @@
 import type {
   AiClassifyInput,
+  AiMatchCategoryInput,
   AiStatus,
   AiSuggestion,
   AppConfig,
@@ -57,6 +58,8 @@ export interface AiHost {
   pull(model: string, onEvent: (e: PullEvent) => void): Promise<boolean>
   cancelPull(): Promise<void>
   classify(model: string, input: AiClassifyInput): Promise<AiSuggestion>
+  /** ¿A qué categoría existente corresponde un nombre fuera del catálogo? */
+  matchCategory(model: string, input: AiMatchCategoryInput): Promise<AiSuggestion>
   reviewDuplicates(model: string, names: string[]): Promise<DuplicatePair[]>
   openDownloadPage(): Promise<void>
 }

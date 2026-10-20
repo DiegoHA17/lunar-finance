@@ -186,7 +186,7 @@ pub fn open_notion_url(app: tauri::AppHandle, url: String) -> AppResult<()> {
 
 // ── Inteligencia artificial local (Ollama) ───────────────────────────────────────────────────────────────────
 
-use crate::ai::{self, AiStatus, ollama::{ClassifyInput, ClassifySuggestion, DuplicatePair, OllamaClient, PullEvent}};
+use crate::ai::{self, AiStatus, ollama::{ClassifyInput, ClassifySuggestion, DuplicatePair, MatchCategoryInput, OllamaClient, PullEvent}};
 use tauri::ipc::Channel;
 
 fn ollama(state: &AppState) -> OllamaClient {
@@ -258,6 +258,15 @@ pub async fn ai_classify(state: State<'_, AppState>, model: String, input: Class
         return Err(AppError::validation("Demasiadas categorías."));
     }
     ollama(&state).classify(&model, &input).await
+}
+
+#[tauri::command]
+pub async fn ai_match_category(state: State<'_, AppState>, model: String, input: MatchCategoryInput) -> AppResult<ClassifySuggestion> {
+    ai::validate_model_name(&model)?;
+    if input.categories.len() > 200 {
+        return Err(AppError::validation("Demasiadas categorías."));
+    }
+    ollama(&state).match_category(&model, &input).await
 }
 
 #[tauri::command]
