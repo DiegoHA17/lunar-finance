@@ -1,4 +1,4 @@
-# Distribución — Lunar Finance 0.2.0
+# Distribución — Lunar Finance 0.2.1
 
 ## Desarrollo
 
@@ -39,44 +39,46 @@ interfaz («Acerca de», metadatos del PDF) y una prueba comprueba que `src-taur
 
 | Plataforma | Formato | Ruta | Estado |
 | --- | --- | --- | --- |
-| Windows x64 | NSIS (por usuario, español) | `release/0.2.0/windows-x64/Lunar Finance_0.2.0_x64-setup.exe` | Generado y verificado |
-| Linux x64 | Debian/Ubuntu `.deb` | `release/0.2.0/linux-x64/Lunar Finance_0.2.0_amd64.deb` | Generado y verificado |
-| Linux x64 | AppImage | `release/0.2.0/linux-x64/Lunar Finance_0.2.0_amd64.AppImage` | Generado y verificado |
-| Linux x64 | Fedora/openSUSE `.rpm` | `release/0.2.0/linux-x64/Lunar Finance-0.2.0-1.x86_64.rpm` | Generado; metadatos verificados, sin instalar |
+| Windows x64 | NSIS (por usuario, español) | `release/0.2.1/windows-x64/Lunar Finance_0.2.1_x64-setup.exe` | Generado y verificado |
+| Linux x64 | Debian/Ubuntu `.deb` | `release/0.2.1/linux-x64/Lunar Finance_0.2.1_amd64.deb` | Generado y verificado |
+| Linux x64 | AppImage | `release/0.2.1/linux-x64/Lunar Finance_0.2.1_amd64.AppImage` | Generado y verificado |
+| Linux x64 | Fedora/openSUSE `.rpm` | `release/0.2.1/linux-x64/Lunar Finance-0.2.1-1.x86_64.rpm` | Generado; metadatos verificados, sin instalar |
 | macOS | `.app`, `.dmg` | — | **No generado** (requiere un Mac) |
 
-Hashes y tamaños: `release/0.2.0/SHA256SUMS` y `release/0.2.0/MANIFEST.md`.
+Hashes y tamaños: `release/0.2.1/SHA256SUMS` y `release/0.2.1/MANIFEST.md`. Los artefactos de 0.2.0 se conservan en
+`release/0.2.0/` (sin la revisión global de categorías).
 
 ### Windows — verificado
 
 - Requisitos: Windows 10 22H2 o 11 (x64). WebView2 viene con Windows 11; el instalador lo instala si falta. No
   necesita permisos de administrador.
-- Metadatos del ejecutable y del instalador: producto «Lunar Finance», versión 0.2.0, editor y copyright
+- Metadatos del ejecutable y del instalador: producto «Lunar Finance», versión 0.2.1, editor y copyright
   «Diego Herrera Ayuso». Icono oficial con 10 resoluciones incrustado en ambos.
 - Contenido del instalador (listado con 7-Zip): `lunar.exe` y los complementos estándar de NSIS. Sin archivos de
   configuración, tokens, bases de datos ni datos personales; sin rutas locales de compilación en el binario.
-- Arranque: el ejecutable extraído del instalador abre «Lunar Finance» sin errores; comandos nativos operativos.
+- Arranque: el ejecutable abre la ventana «Lunar Finance» sin errores (0.2.1); en 0.2.0 se comprobó además el
+  ejecutable extraído del instalador y los comandos nativos.
 - El instalador no está firmado: SmartScreen mostrará un aviso («Más información» → «Ejecutar de todas formas»).
 - Si tenías instalada la versión 0.1.0 («Lunar»), desinstálala desde Configuración → Aplicaciones: el nombre del
   producto cambió y se instala en una carpeta nueva. Tus ajustes y el token se conservan (mismo identificador).
 
-### Linux — compilado y verificado (2026-10-19)
+### Linux — compilado y verificado (0.2.1: 2026-10-20)
 
-Compilado desde el commit `06ee513` en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
+0.2.1 compilado desde el commit `3eb60f3` más el cambio de versión a 0.2.1 (0.2.0, desde `06ee513`), en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
 oficial Ubuntu Base verificada por SHA-256), con Node 22.17.1, Rust 1.99.1 y WebKitGTK 4.1 2.50.4. Configuración:
 `src-tauri/tauri.linux.conf.json` (credenciales con Secret Service).
 
 Comprobaciones:
 
-- `.deb`: paquete `lunar-finance` 0.2.0, `amd64`, mantenedor Diego Herrera Ayuso; `.desktop` «Lunar Finance» válido
+- `.deb`: paquete `lunar-finance` 0.2.1, `amd64`, mantenedor Diego Herrera Ayuso; `.desktop` «Lunar Finance» válido
   (`desktop-file-validate`); iconos de 32, 128 y 256 px; binario sin rutas locales y sin bibliotecas sin resolver;
   se instala con `apt` en Ubuntu 22.04 y abre la ventana «Lunar Finance» (WSLg).
 - AppImage: se extrae correctamente, contiene `.desktop` e icono, y abre la ventana «Lunar Finance».
-- `.rpm`: `lunar-finance` 0.2.0-1, `x86_64`, dependencias y archivos correctos, `rpm -K` OK. No se ha instalado en
+- `.rpm`: `lunar-finance` 0.2.1-1, `x86_64`, dependencias y archivos correctos, `rpm -K` OK. No se ha instalado en
   Fedora/openSUSE.
 - Observaciones menores (no impiden instalar): el `.deb` repite dos dependencias (Tauri añade las suyas a las
   configuradas); el icono HiDPI se instala en `hicolor/256x256@2`; el `.rpm` declara licencia `UNLICENSED`;
-  `make-release-manifest.mjs` no recoge el `.rpm` automáticamente porque su nombre usa `-0.2.0-` (se copió a mano).
+  `make-release-manifest.mjs` no recoge el `.rpm` automáticamente porque su nombre usa `-0.2.1-` (se copió a mano).
 
 Para generarlos en Ubuntu 22.04+ / Debian 12+:
 

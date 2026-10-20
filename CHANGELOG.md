@@ -2,7 +2,7 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico.
 
-## [Sin publicar]
+## [0.2.1] — 2026-10-20
 
 ### Añadido
 - Categorías → Revisar organización → **Revisar categorías con IA**: revisión global de los nombres de categoría de
