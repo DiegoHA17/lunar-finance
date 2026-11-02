@@ -52,10 +52,10 @@ Hashes y tamaños: `release/0.3.0/SHA256SUMS` y `release/0.3.0/MANIFEST.md`. Los
 
 | Versión | Etiqueta | Comprobación |
 | --- | --- | --- |
-| 0.3.0 | `v0.3.0` (`510d3a7`) | Fuente de Linux = código de la etiqueta (`162feec` + parche de versión dan el mismo árbol, salvo dos documentos). Interfaz del instalador de Windows: recompilada desde la etiqueta, mismos archivos JS, CSS, fuentes e imágenes (`index.html` solo difiere en finales de línea). Versión 0.3.0 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. |
-| 0.2.1 | `v0.2.1` (`8fb7271`) | Versión 0.2.1 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. Procedencia según el registro de compilación de esta página. |
-| 0.2.0 | `v0.2.0` (`5e300ac`) | Versión 0.2.0 en los cuatro paquetes. Procedencia según el registro de compilación de esta página. |
-| 0.1.0 | `v0.1.0` (`c57f358`) | **Sin instaladores publicados.** El `Lunar_0.1.0_x64-setup.exe` local se generó unas ocho horas después del commit, con cambios de 0.2.0 (icono nuevo), y no corresponde de forma fiable a esta versión. |
+| 0.3.0 | `v0.3.0` (`82bc74f`) | Fuente de Linux = código de la etiqueta (`67e7174` + parche de versión dan el mismo árbol, salvo dos documentos). Interfaz del instalador de Windows: recompilada desde la etiqueta, mismos archivos JS, CSS, fuentes e imágenes (`index.html` solo difiere en finales de línea). Versión 0.3.0 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. |
+| 0.2.1 | `v0.2.1` (`3525cfe`) | Versión 0.2.1 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. Procedencia según el registro de compilación de esta página. |
+| 0.2.0 | `v0.2.0` (`e47b112`) | Versión 0.2.0 en los cuatro paquetes. Procedencia según el registro de compilación de esta página. |
+| 0.1.0 | `v0.1.0` (`0f4b3d4`) | **Sin instaladores publicados.** El `Lunar_0.1.0_x64-setup.exe` local se generó unas ocho horas después del commit, con cambios de 0.2.0 (icono nuevo), y no corresponde de forma fiable a esta versión. |
 
 Los binarios no son reproducibles bit a bit, así que la correspondencia completa del código Rust no puede demostrarse
 recompilando. Los SHA-256 publicados son los de los archivos generados en cada compilación.
@@ -76,12 +76,14 @@ recompilando. Los SHA-256 publicados son los de los archivos generados en cada c
 
 ### Linux — compilado y verificado (0.3.0: 2026-11-02)
 
-> Los identificadores de commit se actualizaron el 2026-11-02 al sustituir el correo de autor del historial antes de
-> publicarlo. El contenido de cada commit no cambió (mismo árbol). Correspondencia: `056438d` → `c57f358` (v0.1.0),
-> `06ee513` → `5e300ac` (v0.2.0), `3eb60f3` → `91014a6`, `2573c86` → `8fb7271` (v0.2.1), `d9cb2d3` → `162feec` y
-> `1a53ea0` → `510d3a7` (v0.3.0).
+> Los identificadores de commit cambiaron al limpiar el historial antes de publicarlo (2026-11-02 y 2026-11-03). Se
+> sustituyó el correo de autor por el `noreply` de GitHub, se quitaron las líneas de coautoría y se eliminó
+> `.claude/launch.json`, que era configuración local del editor y no interviene en la compilación. El resto del
+> contenido de cada commit no cambió. Correspondencia con los identificadores originales: `056438d` → `0f4b3d4`
+> (v0.1.0), `06ee513` → `e47b112` (v0.2.0), `3eb60f3` → `94cc0a6`, `2573c86` → `3525cfe` (v0.2.1),
+> `d9cb2d3` → `67e7174` y `1a53ea0` → `82bc74f` (v0.3.0).
 
-0.3.0 compilado desde el commit `162feec` más el cambio de versión a 0.3.0 (0.2.1, desde `91014a6` más el cambio de versión; 0.2.0, desde `5e300ac`), en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
+0.3.0 compilado desde el commit `67e7174` más el cambio de versión a 0.3.0 (0.2.1, desde `94cc0a6` más el cambio de versión; 0.2.0, desde `e47b112`), en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
 oficial Ubuntu Base verificada por SHA-256), con Node 22.17.1, Rust 1.99.1 y WebKitGTK 4.1 2.50.4. Configuración:
 `src-tauri/tauri.linux.conf.json` (credenciales con Secret Service).
 

@@ -28,7 +28,7 @@ src-tauri/target
 src-tauri/gen/schemas
 
 # Utilidades locales
-.claude/settings.local.json
+.claude/
 muestras/
 
 # Artefactos de distribución (se publican aparte, no en git)
