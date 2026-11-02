@@ -17,7 +17,6 @@ categorías automáticas, pagos periódicos e IA local. Para Windows y Linux.
 
 **Versión 0.3.0** · [Todas las versiones](https://github.com/DiegoHA17/lunar-finance/releases) · [Cómo instalar](#instalación) · [SHA-256](https://github.com/DiegoHA17/lunar-finance/releases/download/v0.3.0/SHA256SUMS.txt)
 
-[![Última versión](https://img.shields.io/github/v/release/DiegoHA17/lunar-finance?label=versi%C3%B3n&color=46698a)](https://github.com/DiegoHA17/lunar-finance/releases/latest)
 [![Plataformas: Windows y Linux](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-46698a)](#instalación)
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-2f6b57)](LICENSE)
 
