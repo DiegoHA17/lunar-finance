@@ -2,6 +2,13 @@
   "name": "lunar-finance",
   "private": true,
   "version": "0.3.0",
+  "description": "Lunar Finance — finanzas personales conectadas con Notion",
+  "author": "Diego Herrera Ayuso",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DiegoHA17/lunar-finance.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

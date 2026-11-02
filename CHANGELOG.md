@@ -2,6 +2,14 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico.
 
+## [Sin publicar]
+
+### Añadido
+- Repositorio público: licencia MIT (`LICENSE`), `SECURITY.md` y README de presentación con descargas, capturas
+  reales (modo demostración) y vídeo.
+- Guías: instalación, conexión con Notion paso a paso, atajos de iPhone, preguntas frecuentes, licencias y créditos,
+  y guía rápida de Ollama en `docs/ia.md`.
+
 ## [0.3.0] — 2026-11-02
 
 ### Añadido
@@ -92,3 +100,9 @@ Primera entrega funcional.
 - Instalador NSIS por usuario en español.
 - Documentación: README, ARCHITECTURE, ROADMAP, integración con Notion, modelo de datos, clasificación, pruebas y
   empaquetado.
+
+[Sin publicar]: https://github.com/DiegoHA17/lunar-finance/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/DiegoHA17/lunar-finance/releases/tag/v0.3.0
+[0.2.1]: https://github.com/DiegoHA17/lunar-finance/releases/tag/v0.2.1
+[0.2.0]: https://github.com/DiegoHA17/lunar-finance/releases/tag/v0.2.0
+[0.1.0]: https://github.com/DiegoHA17/lunar-finance/releases/tag/v0.1.0

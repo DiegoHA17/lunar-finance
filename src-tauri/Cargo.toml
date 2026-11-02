@@ -3,8 +3,8 @@ name = "lunar"
 version = "0.3.0"
 description = "Lunar Finance — finanzas personales conectadas con Notion"
 authors = ["Diego Herrera Ayuso"]
-license = "UNLICENSED"
-repository = ""
+license = "MIT"
+repository = "https://github.com/DiegoHA17/lunar-finance"
 edition = "2024"
 rust-version = "1.90"
 

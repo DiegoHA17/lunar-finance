@@ -1,0 +1,27 @@
+{
+  "parent": {
+    "database_id": "TU_ID_DE_BASE_DE_DATOS"
+  },
+  "properties": {
+    "Descripción": {
+      "title": [
+        { "text": { "content": "Compra de ejemplo" } }
+      ]
+    },
+    "Fecha": {
+      "date": { "start": "2026-10-18T19:32:00+02:00" }
+    },
+    "Categoría": {
+      "select": { "name": "Ocio" }
+    },
+    "Tipo": {
+      "select": { "name": "Gasto" }
+    },
+    "Cantidad": {
+      "number": 12.5
+    },
+    "Método de Pago": {
+      "select": { "name": "Tarjeta" }
+    }
+  }
+}

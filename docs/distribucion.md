@@ -48,6 +48,18 @@ interfaz («Acerca de», metadatos del PDF) y una prueba comprueba que `src-taur
 Hashes y tamaños: `release/0.3.0/SHA256SUMS` y `release/0.3.0/MANIFEST.md`. Los artefactos anteriores se conservan en
 `release/0.2.1/` (sin estilo Vintage ni pagos periódicos) y `release/0.2.0/` (sin la revisión global de categorías).
 
+### Correspondencia entre binarios, versiones y código (2026-11-02)
+
+| Versión | Etiqueta | Comprobación |
+| --- | --- | --- |
+| 0.3.0 | `v0.3.0` (`510d3a7`) | Fuente de Linux = código de la etiqueta (`162feec` + parche de versión dan el mismo árbol, salvo dos documentos). Interfaz del instalador de Windows: recompilada desde la etiqueta, mismos archivos JS, CSS, fuentes e imágenes (`index.html` solo difiere en finales de línea). Versión 0.3.0 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. |
+| 0.2.1 | `v0.2.1` (`8fb7271`) | Versión 0.2.1 en el `.exe`, el `.deb`, el `.rpm` y el binario de la AppImage. Procedencia según el registro de compilación de esta página. |
+| 0.2.0 | `v0.2.0` (`5e300ac`) | Versión 0.2.0 en los cuatro paquetes. Procedencia según el registro de compilación de esta página. |
+| 0.1.0 | `v0.1.0` (`c57f358`) | **Sin instaladores publicados.** El `Lunar_0.1.0_x64-setup.exe` local se generó unas ocho horas después del commit, con cambios de 0.2.0 (icono nuevo), y no corresponde de forma fiable a esta versión. |
+
+Los binarios no son reproducibles bit a bit, así que la correspondencia completa del código Rust no puede demostrarse
+recompilando. Los SHA-256 publicados son los de los archivos generados en cada compilación.
+
 ### Windows — verificado
 
 - Requisitos: Windows 10 22H2 o 11 (x64). WebView2 viene con Windows 11; el instalador lo instala si falta. No
@@ -64,7 +76,12 @@ Hashes y tamaños: `release/0.3.0/SHA256SUMS` y `release/0.3.0/MANIFEST.md`. Los
 
 ### Linux — compilado y verificado (0.3.0: 2026-11-02)
 
-0.3.0 compilado desde el commit `d9cb2d3` más el cambio de versión a 0.3.0 (0.2.1, desde `3eb60f3`; 0.2.0, desde `06ee513`), en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
+> Los identificadores de commit se actualizaron el 2026-11-02 al sustituir el correo de autor del historial antes de
+> publicarlo. El contenido de cada commit no cambió (mismo árbol). Correspondencia: `056438d` → `c57f358` (v0.1.0),
+> `06ee513` → `5e300ac` (v0.2.0), `3eb60f3` → `91014a6`, `2573c86` → `8fb7271` (v0.2.1), `d9cb2d3` → `162feec` y
+> `1a53ea0` → `510d3a7` (v0.3.0).
+
+0.3.0 compilado desde el commit `162feec` más el cambio de versión a 0.3.0 (0.2.1, desde `91014a6` más el cambio de versión; 0.2.0, desde `5e300ac`), en una distribución WSL 2 dedicada («LunarBuild», Ubuntu 22.04.5 LTS, imagen
 oficial Ubuntu Base verificada por SHA-256), con Node 22.17.1, Rust 1.99.1 y WebKitGTK 4.1 2.50.4. Configuración:
 `src-tauri/tauri.linux.conf.json` (credenciales con Secret Service).
 
@@ -77,7 +94,7 @@ Comprobaciones:
 - `.rpm`: `lunar-finance` 0.3.0-1, `x86_64`, dependencias y archivos correctos, `rpm -K` OK. No se ha instalado en
   Fedora/openSUSE.
 - Observaciones menores (no impiden instalar): el `.deb` repite dos dependencias (Tauri añade las suyas a las
-  configuradas); el icono HiDPI se instala en `hicolor/256x256@2`; el `.rpm` declara licencia `UNLICENSED`;
+  configuradas); el icono HiDPI se instala en `hicolor/256x256@2`; el `.rpm` de 0.3.0 declara licencia `UNLICENSED` porque se compiló antes de publicar el proyecto con licencia MIT (`Cargo.toml` ya declara `MIT` para las próximas compilaciones);
   `make-release-manifest.mjs` no recoge el `.rpm` automáticamente porque su nombre usa `-<versión>-` (se copia a mano).
 
 Para generarlos en Ubuntu 22.04+ / Debian 12+:
@@ -147,6 +164,7 @@ desarrollada ni probada.**
 - Linux: probar el `.rpm` en Fedora/openSUSE y los paquetes en un escritorio Linux real (aquí se probaron en WSL).
 - macOS: compilar en un Mac; firma y notarización si se distribuye.
 - Firma de código del instalador de Windows.
+- Incluir en los instaladores un archivo con los avisos de licencia de las dependencias (ver [licencias.md](licencias.md)).
 - Eliminar movimientos desde la app: no implementado (se hace en Notion).
 - En tu Notion conviven opciones «Gasto» y «Gasto » (y 7 categorías con espacio final) porque el atajo añade un
   espacio. Lunar Finance las lee correctamente y, al escribir, reutiliza la variante que ya usan tus movimientos; para

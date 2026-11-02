@@ -3,6 +3,23 @@
 Opcional y desactivada por defecto. Lunar funciona igual sin Ollama, sin modelo o con el servicio detenido: en ese
 caso solo se usan las reglas y la clasificación manual. Nunca se envían datos a servicios remotos.
 
+## Guía rápida
+
+1. **Ajustes → Inteligencia artificial.** Si Ollama no está instalado, **Instalar Ollama** abre su página oficial de
+   descarga para tu sistema (<https://ollama.com/download>). Instálalo y pulsa **Comprobar**.
+2. Si el servicio está detenido, en Windows pulsa **Iniciar Ollama**. En Linux, Ollama se ejecuta como servicio del
+   sistema: arráncalo con `systemctl start ollama` si no lo está.
+3. Si no hay ningún modelo, **Descargar modelo** propone uno según la memoria del equipo, por ejemplo
+   `gemma3:4b` (3,4 GB). Muestra el tamaño y pide confirmación antes de descargarlo.
+4. Activa **Proponer categorías con IA**.
+
+Después, la IA aparece en dos sitios:
+
+- **Movimientos → Clasificar N sin categoría → Proponer con IA**.
+- **Categorías → Revisar organización**.
+
+Ninguna propuesta se aplica sin tu confirmación.
+
 ## Estados (Ajustes → Inteligencia artificial)
 
 | Estado | Detección | Acción |

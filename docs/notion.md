@@ -56,6 +56,7 @@ movimientos:
 | Categoría | select, rich_text, relation | sí |
 | Método de pago | select, rich_text, multi_select (solo lectura) | no |
 | Origen de la clasificación | select, rich_text | no |
+| Pago periódico | rich_text | no (necesaria para registrar pagos periódicos) |
 
 Los valores de «Tipo» se asignan a gasto, ingreso, devolución o transferencia en Ajustes. Un valor sin asignar deja
 el movimiento **fuera de los totales** con el motivo visible: nunca se adivina.
@@ -101,6 +102,9 @@ del usuario y se hacen con el diagnóstico de la aplicación.
 
 ## Estado de la conexión real
 
-La integración está implementada y probada contra la API simulada. **No se ha probado todavía contra tu
-Notion**, porque requiere tu token y que compartas la base de datos (pasos del README). Tras hacerlo, ejecuta
-el diagnóstico: si todos los pasos salen en verde, la conexión está verificada.
+- **Lectura con Notion real:** verificada el 2026-10-19 con el diagnóstico completo en verde y la lectura de
+  movimientos y categorías.
+- **Escritura con Notion real:** no se ha probado de forma controlada. Las pruebas no modifican datos reales: la
+  escritura (incluidos los pagos periódicos) se ha probado con la API simulada y con el backend de demostración.
+
+Guía para usuarios: [configuracion-notion.md](configuracion-notion.md).
