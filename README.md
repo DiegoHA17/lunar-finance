@@ -1,6 +1,6 @@
 # Lunar Finance
 
-Desarrollado por Diego Herrera Ayuso · versión 0.2.1
+Desarrollado por Diego Herrera Ayuso · versión 0.3.0
 
 Aplicación de escritorio para Windows que organiza tus finanzas personales a partir de tu base de datos de
 Notion: clasifica los gastos con reglas propias, muestra estadísticas por periodo y genera informes en PDF y CSV.
@@ -18,7 +18,7 @@ Documentación técnica: [ARCHITECTURE.md](ARCHITECTURE.md) · [Integración con
 
 ## Instalar (usuario)
 
-1. Ejecuta `release/0.2.1/windows-x64/Lunar Finance_0.2.1_x64-setup.exe` (o el generado en `src-tauri/target/release/bundle/nsis/`).
+1. Ejecuta `release/0.3.0/windows-x64/Lunar Finance_0.3.0_x64-setup.exe` (o el generado en `src-tauri/target/release/bundle/nsis/`).
    Se instala para tu usuario, sin permisos de administrador.
 2. Abre Lunar Finance. Puedes **explorar con datos de demostración** (claramente marcados) o **conectar con Notion**.
 

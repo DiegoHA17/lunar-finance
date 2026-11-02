@@ -1,5 +1,5 @@
 LUNAR FINANCE - CÓMO CONECTARLO CON NOTION
-Versión 0.2.1 · Desarrollado por Diego Herrera Ayuso
+Versión 0.3.0 · Desarrollado por Diego Herrera Ayuso
 
 Necesitas: Lunar Finance instalado y tu base de datos de gastos en Notion
 (la que rellena el atajo «Gasto» del iPhone). Son unos 5 minutos.

@@ -2,7 +2,7 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico.
 
-## [Sin publicar]
+## [0.3.0] — 2026-11-02
 
 ### Añadido
 - **Pagos periódicos** (semanal, mensual o anual): se registran en Notion al abrir o sincronizar, automáticamente o
