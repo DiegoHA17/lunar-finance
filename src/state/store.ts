@@ -4,10 +4,12 @@ import { useSyncExternalStore } from 'react'
 import type { Rule } from '../domain/classifier/rules'
 import { today } from '../domain/dates'
 import { type Period, type PeriodKind, periodContaining } from '../domain/periods'
+import type { ReportStyle } from '../domain/pdf/theme'
+import type { RecurringDoc, RecurringPlan } from '../domain/recurring'
 import type { Category, Movement } from '../domain/types'
 import type { AiStatus, AppConfig, LunarError, PageDto } from '../infra/contracts'
 
-export type Screen = 'dashboard' | 'movements' | 'categories' | 'rules' | 'reports' | 'settings'
+export type Screen = 'dashboard' | 'movements' | 'categories' | 'rules' | 'recurring' | 'reports' | 'settings'
 export type ThemePref = 'system' | 'light' | 'dark'
 export type DataMode = 'notion' | 'demo'
 
@@ -18,9 +20,11 @@ export interface Preferences {
   welcomed: boolean
   /** IA local opcional: desactivada por defecto. */
   ai: { enabled: boolean; model: string | null }
+  /** Estilo del informe PDF; el clásico es el predeterminado. */
+  reportStyle: ReportStyle
 }
 
-export const DEFAULT_PREFS: Preferences = { theme: 'system', mode: 'notion', periodKind: 'month', welcomed: false, ai: { enabled: false, model: null } }
+export const DEFAULT_PREFS: Preferences = { theme: 'system', mode: 'notion', periodKind: 'month', welcomed: false, ai: { enabled: false, model: null }, reportStyle: 'classic' }
 
 export interface PullState {
   model: string
@@ -37,6 +41,17 @@ export interface AiUiState {
   starting: boolean
   pull: PullState | null
 }
+
+export interface RecurringState {
+  /** Documento local leído (null hasta la primera carga o si no se pudo leer). */
+  doc: RecurringDoc | null
+  /** Ocurrencias pendientes según los últimos datos de Notion. */
+  plan: RecurringPlan | null
+  error: LunarError | null
+  busy: boolean
+}
+
+export const EMPTY_RECURRING_STATE: RecurringState = { doc: null, plan: null, error: null, busy: false }
 
 export interface DataState {
   status: 'idle' | 'loading' | 'ready' | 'error'
@@ -76,6 +91,7 @@ export interface AppState {
   data: DataState
   rules: Rule[]
   rulesNotice: string | null
+  recurring: RecurringState
   prefs: Preferences
   screen: Screen
   period: Period
@@ -130,6 +146,7 @@ export const store = new Store<AppState>({
   data: EMPTY_DATA,
   rules: [],
   rulesNotice: null,
+  recurring: EMPTY_RECURRING_STATE,
   prefs: DEFAULT_PREFS,
   screen: 'dashboard',
   period: periodContaining('month', today()),

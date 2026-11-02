@@ -12,7 +12,7 @@ Notion: clasifica los gastos con reglas propias, muestra estadísticas por perio
 - **Las cifras son exactas.** Importes en céntimos enteros; el panel, los informes, el PDF y el CSV usan las mismas
   fórmulas.
 
-Documentación técnica: [ARCHITECTURE.md](ARCHITECTURE.md) · [Integración con Notion](docs/notion.md) ·
+Documentación técnica: [ARCHITECTURE.md](ARCHITECTURE.md) · [Integración con Notion](docs/notion.md) · [Guía rápida de conexión (.txt)](docs/conectar-con-notion.txt) ·
 [Modelo de datos](docs/modelo-de-datos.md) · [Categorías y reglas](docs/clasificacion.md) ·
 [Pruebas y empaquetado](docs/pruebas-y-empaquetado.md) · [IA local](docs/ia.md) · [Distribución](docs/distribucion.md) · [Marca e iconos](docs/marca-e-iconos.md) · [Roadmap](ROADMAP.md) · [Cambios](CHANGELOG.md)
 
@@ -50,7 +50,8 @@ Requisito: Windows 10/11 con WebView2 (incluido en Windows 11; el instalador lo 
 | Movimientos | Buscar y filtrar, corregir categorías (y crear una regla a partir de la corrección), editar, crear y exportar a CSV. «Clasificar N sin categoría» revisa las propuestas de tus reglas antes de aplicarlas. |
 | Categorías | Catálogo con importes por periodo: crear, editar, alias, archivar y reactivar. |
 | Reglas | Reglas deterministas con prioridad, condiciones y excepciones; muestra conflictos e impacto. |
-| Informes | Semana, mes, trimestre, año o intervalo personalizado; resumen ejecutivo o detallado; PDF y CSV. |
+| Pagos periódicos | Gastos e ingresos semanales, mensuales o anuales que se registran en Notion al abrir o sincronizar, solos o con confirmación y sin duplicados ([detalles](docs/pagos-periodicos.md)). |
+| Informes | Semana, mes, trimestre, año o intervalo personalizado; resumen ejecutivo o detallado; PDF (estilo Clásico o Vintage) y CSV. |
 | Ajustes | Token, base de datos, mapeo, diagnóstico, mejoras opcionales del esquema, IA local (Ollama), tema y modo demostración. |
 
 ## Desarrollo
@@ -86,6 +87,7 @@ Más detalle en [docs/pruebas-y-empaquetado.md](docs/pruebas-y-empaquetado.md).
 | Token de la integración | Administrador de credenciales de Windows (`com.lunar.finance` / `notion-token`) |
 | Configuración (IDs y mapeo, sin secretos) | `%APPDATA%\com.lunar.finance\config.json` |
 | Reglas de clasificación | `%APPDATA%\com.lunar.finance\rules.json` (copia anterior en `rules.json.bak`) |
+| Pagos periódicos | `%APPDATA%com.lunar.financeecurring.json` (copia anterior en `recurring.json.bak`) |
 | Preferencias (tema, periodo) | `%APPDATA%\com.lunar.finance\preferences.json` |
 | Registro de la aplicación | `%LOCALAPPDATA%\com.lunar.finance\logs` (sin token ni datos financieros) |
 

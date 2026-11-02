@@ -104,6 +104,7 @@ pub const MOVEMENT_FIELDS: &[FieldSpec] = &[
     FieldSpec { key: "category", label: "Categoría", types: &["select", "rich_text", "relation"], required: true, writable_types: &["select", "rich_text", "relation"] },
     FieldSpec { key: "paymentMethod", label: "Método de pago", types: &["select", "rich_text", "multi_select"], required: false, writable_types: &["select", "rich_text"] },
     FieldSpec { key: "origin", label: "Origen de la clasificación", types: &["select", "rich_text"], required: false, writable_types: &["select", "rich_text"] },
+    FieldSpec { key: "recurrence", label: "Pago periódico", types: &["rich_text"], required: false, writable_types: &["rich_text"] },
 ];
 
 pub const CATEGORY_FIELDS: &[FieldSpec] = &[

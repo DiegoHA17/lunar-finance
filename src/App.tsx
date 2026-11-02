@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { Categories } from './screens/Categories'
 import { Dashboard } from './screens/Dashboard'
 import { Movements } from './screens/Movements'
+import { Recurring } from './screens/Recurring'
 import { Reports } from './screens/Reports'
 import { Rules } from './screens/Rules'
 import { Settings } from './screens/Settings'
@@ -81,6 +82,7 @@ export function App() {
             {screen === 'movements' && <Movements />}
             {screen === 'categories' && <Categories />}
             {screen === 'rules' && <Rules />}
+            {screen === 'recurring' && <Recurring />}
             {screen === 'reports' && <Reports />}
             {screen === 'settings' && <Settings />}
           </div>

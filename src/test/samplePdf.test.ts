@@ -1,12 +1,13 @@
 /**
- * Utilidad de desarrollo: genera informes PDF de muestra con los datos de DEMOSTRACIÓN para revisarlos a ojo.
- * Solo se ejecuta con `npm run sample:pdf` (variable LUNAR_SAMPLE_PDF con la carpeta de salida).
+ * Utilidad de desarrollo: genera informes PDF de muestra con los datos de DEMOSTRACIÓN, en cada estilo, para
+ * revisarlos a ojo. Solo se ejecuta con la variable LUNAR_SAMPLE_PDF (carpeta de salida).
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { it } from 'vitest'
 import { CategoryIndex } from '../domain/categories'
 import { today } from '../domain/dates'
+import { PDF_THEMES } from '../domain/pdf/theme'
 import { periodContaining, previousPeriod } from '../domain/periods'
 import { buildReport } from '../domain/report'
 import { DemoBackend } from '../infra/demo'
@@ -22,13 +23,15 @@ it.skipIf(!out)('genera PDF de muestra', async () => {
   const ctx = { demo: true, dataComplete: true, lastSyncAt: data.fetchedAt }
   mkdirSync(out!, { recursive: true })
   const month = previousPeriod(periodContaining('month', today()))
-  for (const [name, period, detail] of [
-    ['resumen-mes', month, 'summary'],
-    ['detalle-mes', month, 'full'],
-    ['resumen-anio', periodContaining('year', today()), 'summary'],
-  ] as const) {
-    const logo = new Uint8Array(readFileSync(new URL('../assets/brand/lunar-logo-64.png', import.meta.url)))
-    const bytes = await renderReportPdf(buildReport(data.movements, index, period, detail, ctx), index, logo)
-    writeFileSync(join(out!, `${name}.pdf`), bytes)
+  const logo = new Uint8Array(readFileSync(new URL('../assets/brand/lunar-logo-64.png', import.meta.url)))
+  for (const theme of Object.values(PDF_THEMES)) {
+    for (const [name, period, detail] of [
+      ['resumen-mes', month, 'summary'],
+      ['detalle-mes', month, 'full'],
+      ['resumen-anio', periodContaining('year', today()), 'summary'],
+    ] as const) {
+      const bytes = await renderReportPdf(buildReport(data.movements, index, period, detail, ctx), index, logo, theme)
+      writeFileSync(join(out!, `${theme.style}-${name}.pdf`), bytes)
+    }
   }
 })

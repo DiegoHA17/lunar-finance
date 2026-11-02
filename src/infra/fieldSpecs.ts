@@ -25,6 +25,7 @@ export const MOVEMENT_FIELDS: FieldSpec[] = [
   { key: 'category', label: 'Categoría', types: ['select', 'rich_text', 'relation'], required: true, writableTypes: ['select', 'rich_text', 'relation'], help: 'Selección, texto o relación con «Categorías».', synonyms: ['categoria', 'category', 'categorias'] },
   { key: 'paymentMethod', label: 'Método de pago', types: ['select', 'rich_text', 'multi_select'], required: false, writableTypes: ['select', 'rich_text'], help: 'Tarjeta, efectivo, Bizum…', synonyms: ['metodo de pago', 'metodo', 'forma de pago', 'pago', 'payment method', 'cuenta'] },
   { key: 'origin', label: 'Origen de la clasificación', types: ['select', 'rich_text'], required: false, writableTypes: ['select', 'rich_text'], help: 'Opcional: registra si la categoría la puso una regla, la IA o tú.', synonyms: ['origen clasificacion', 'origen de la clasificacion', 'origen', 'clasificacion'] },
+  { key: 'recurrence', label: 'Pago periódico', types: ['rich_text'], required: false, writableTypes: ['rich_text'], help: 'Opcional: identifica los movimientos creados por un pago periódico (evita duplicados).', synonyms: ['pago periodico', 'pagos periodicos', 'recurrencia'] },
 ]
 
 export const CATEGORY_FIELDS: FieldSpec[] = [

@@ -17,7 +17,7 @@ import type {
   SourceSummary,
 } from './contracts'
 
-export type StoreName = 'rules' | 'preferences'
+export type StoreName = 'rules' | 'preferences' | 'recurring'
 
 /** Operaciones de datos. La interfaz nunca habla con Notion fuera de este contrato. */
 export interface Backend {
@@ -38,6 +38,9 @@ export interface Backend {
   createCategoriesDatabase(parentPageId: string, title: string): Promise<SchemaDto>
   readStore(name: StoreName): Promise<unknown | null>
   writeStore(name: StoreName, value: unknown): Promise<void>
+  /** Cerrojo exclusivo entre instancias para registrar pagos periódicos. `false` si otra instancia lo tiene. */
+  acquireRunLock(): Promise<boolean>
+  releaseRunLock(): Promise<void>
 }
 
 /** Servicios del sistema anfitrión (independientes de si los datos son reales o de demostración). */

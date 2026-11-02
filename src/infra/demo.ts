@@ -428,6 +428,11 @@ export class DemoBackend implements Backend {
   async writeStore(name: StoreName, value: unknown) {
     this.stores.set(name, structuredClone(value))
   }
+  /** Una sola instancia en memoria: el cerrojo en proceso de `services/recurring.ts` basta. */
+  async acquireRunLock() {
+    return true
+  }
+  async releaseRunLock() {}
 }
 
 function emptyValue(type: string): PropValue {

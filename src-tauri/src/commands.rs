@@ -28,6 +28,8 @@ pub struct AppState {
     pub ollama_url: String,
     /// Señal para cancelar la descarga de modelo en curso.
     pub ai_pull: Mutex<Option<tokio::sync::watch::Sender<bool>>>,
+    /// Cerrojo entre procesos del registro de pagos periódicos (mientras está abierto, otros procesos esperan).
+    pub run_lock: Mutex<Option<std::fs::File>>,
 }
 
 impl AppState {
@@ -167,6 +169,24 @@ pub fn store_read(state: State<'_, AppState>, name: String) -> AppResult<Option<
 pub fn store_write(state: State<'_, AppState>, name: String, value: serde_json::Value) -> AppResult<()> {
     let _guard = state.write_lock.lock().map_err(|_| AppError::internal("Bloqueo de escritura envenenado."))?;
     store::write(&state.data_dir, &name, &value)
+}
+
+/// Intenta obtener el cerrojo de pagos periódicos. `false` si otra instancia de Lunar lo tiene.
+#[tauri::command]
+pub fn run_lock_acquire(state: State<'_, AppState>) -> AppResult<bool> {
+    let mut held = state.run_lock.lock().map_err(|_| AppError::internal("Bloqueo envenenado."))?;
+    if held.is_some() {
+        return Ok(true);
+    }
+    *held = store::try_lock_run(&state.data_dir)?;
+    Ok(held.is_some())
+}
+
+#[tauri::command]
+pub fn run_lock_release(state: State<'_, AppState>) -> AppResult<()> {
+    let mut held = state.run_lock.lock().map_err(|_| AppError::internal("Bloqueo envenenado."))?;
+    *held = None;
+    Ok(())
 }
 
 #[tauri::command]

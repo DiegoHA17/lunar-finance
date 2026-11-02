@@ -74,9 +74,10 @@ Reglas de dependencia:
 | Movimientos | `src/services/movements.ts` (+ validación en `domain/movements.ts`) |
 | Categorías | `src/services/categories.ts` (+ reglas de catálogo en `domain/categories.ts`) |
 | Reglas | `src/services/rules.ts` (+ motor en `domain/classifier/rules.ts`) |
+| Pagos periódicos | `src/domain/recurring.ts` (calendario y plan), `services/recurring.ts` (registro en Notion), `recurring.json` local; ver [docs/pagos-periodicos.md](docs/pagos-periodicos.md) |
 | Clasificación | `src/services/classification.ts` (+ `domain/classifier/pipeline.ts`) |
 | Estadísticas | `src/domain/stats.ts` (única implementación de las fórmulas) |
-| Informes | `src/domain/report.ts`, `domain/pdf/layout.ts`, `infra/pdfRender.ts`, `domain/csv.ts`, `services/reports.ts` |
+| Informes | `src/domain/report.ts`, `domain/pdf/layout.ts`, `domain/pdf/theme.ts` (estilos Clásico y Vintage), `infra/pdfRender.ts`, `domain/csv.ts`, `services/reports.ts` |
 | Notion | `src-tauri/src/notion/*` (red) + `src/infra/mapping.ts` (traducción al dominio) + `services/sync.ts` (carga) |
 | Credenciales | `src-tauri/src/credentials.rs` |
 | Configuración | `src-tauri/src/config.rs` (+ `store.rs` para reglas y preferencias) |

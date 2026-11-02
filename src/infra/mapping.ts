@@ -228,6 +228,8 @@ export interface MovementDraft {
   kind: MovementKind
   category: Category | null
   paymentMethod: string | null
+  /** Clave de la ocurrencia de un pago periódico (solo al crear). */
+  recurrenceKey?: string
 }
 
 /**
@@ -298,7 +300,16 @@ export function movementWrites(
     const o = originWrite(src, origin)
     if (o) w[o[0]] = o[1]
   }
+  if (draft.recurrenceKey !== undefined) {
+    const ref = requireRef(src, 'recurrence', 'Pago periódico')
+    w[ref.id] = textWrite(ref, draft.recurrenceKey, 'Pago periódico')
+  }
   return w
+}
+
+/** Texto de la propiedad «Pago periódico» de una página (clave de ocurrencia), si está configurada. */
+export function recurrenceTextOf(page: PageDto, src: SourceConfig): string | null {
+  return textOf(prop(page, src, 'recurrence'))
 }
 
 export interface CategoryWriteDraft {

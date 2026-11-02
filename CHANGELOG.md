@@ -2,6 +2,25 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Versionado semántico.
 
+## [Sin publicar]
+
+### Añadido
+- **Pagos periódicos** (semanal, mensual o anual): se registran en Notion al abrir o sincronizar, automáticamente o
+  con confirmación. Cada ocurrencia lleva una clave estable en la nueva propiedad opcional «Pago periódico» y un
+  registro local previo al envío, de modo que no se duplica tras reinicios, errores de red o respuestas perdidas;
+  lo dudoso pasa a revisión manual. Días 29-31 y años bisiestos, varios periodos atrasados, pausa y reanudación.
+  Reglas en `recurring.json`. Ver `docs/pagos-periodicos.md`.
+- Cerrojo entre instancias (biblioteca estándar de Rust) y escritura forzada a disco de los documentos locales.
+- Informes → **Estilo del informe**: Clásico (predeterminado) o **Vintage**, inspirado en los registros contables
+  impresos: papel marfil, tinta carbón y sepia, acentos oliva, títulos en Courier y tablas e importes en Times, con
+  dobles rayas en los totales. La elección se guarda en las preferencias y se aplica al PDF exportado. Ambos estilos
+  comparten datos, cifras, paginación y exportación; solo cambia el tema visual (`domain/pdf/theme.ts`). Usa las
+  fuentes estándar de PDF: sin dependencias ni archivos nuevos.
+
+### Corregido
+- PDF: las cifras principales de un millón de euros o más ya no se recortan con «…»; se reduce el cuerpo de letra.
+- PDF: la última etiqueta del eje de la gráfica (p. ej. «31 oct») ya no invade el margen derecho.
+
 ## [0.2.1] — 2026-10-20
 
 ### Añadido

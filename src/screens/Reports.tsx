@@ -4,10 +4,11 @@ import { CategoryIndex } from '../domain/categories'
 import { formatDateLong } from '../domain/dates'
 import { formatBasisPoints, formatEUR } from '../domain/money'
 import { type Period, periodLabel } from '../domain/periods'
+import { REPORT_STYLES } from '../domain/pdf/theme'
 import { type ReportDetail, buildReport } from '../domain/report'
 import type { CategoryRow } from '../domain/stats'
 import { exportCsv, exportReportPdf } from '../services/reports'
-import { exportWithHost } from '../state/actions'
+import { exportWithHost, setPrefs } from '../state/actions'
 import { useApp } from '../state/store'
 import { SpendColumns } from '../ui/charts'
 import { PeriodPicker } from '../ui/PeriodPicker'
@@ -59,6 +60,7 @@ export function Reports() {
   const fetchedAt = useApp((s) => s.data.fetchedAt)
   const complete = useApp((s) => s.data.complete)
   const mode = useApp((s) => s.mode)
+  const style = useApp((s) => s.prefs.reportStyle)
   const years = useYears()
   const [period, setPeriod] = useState<Period>(globalPeriod)
   const [detail, setDetail] = useState<ReportDetail>('summary')
@@ -73,7 +75,7 @@ export function Reports() {
 
   async function run(kind: 'pdf' | 'csv') {
     setExporting(kind)
-    if (kind === 'pdf') await exportWithHost((h) => exportReportPdf(h, { ...report, generatedAt: new Date().toISOString() }, index), 'PDF')
+    if (kind === 'pdf') await exportWithHost((h) => exportReportPdf(h, { ...report, generatedAt: new Date().toISOString() }, index, style), 'PDF')
     else await exportWithHost((h) => exportCsv(h, report.summary.movements, index, report.fileName.replace('resumen', 'movimientos').replace('informe', 'movimientos')), 'CSV')
     setExporting(null)
   }
@@ -85,13 +87,27 @@ export function Reports() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <PeriodPicker value={period} onChange={setPeriod} years={years} />
-            <div className="seg" role="group" aria-label="Nivel de detalle">
-              <button aria-pressed={detail === 'summary'} onClick={() => setDetail('summary')}>
-                Resumen ejecutivo
-              </button>
-              <button aria-pressed={detail === 'full'} onClick={() => setDetail('full')}>
-                Con todos los movimientos
-              </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="seg" role="group" aria-label="Nivel de detalle">
+                <button aria-pressed={detail === 'summary'} onClick={() => setDetail('summary')}>
+                  Resumen ejecutivo
+                </button>
+                <button aria-pressed={detail === 'full'} onClick={() => setDetail('full')}>
+                  Con todos los movimientos
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span id="report-style" className="text-[13px] text-mist">
+                  Estilo del informe
+                </span>
+                <div className="seg" role="group" aria-labelledby="report-style">
+                  {REPORT_STYLES.map((s) => (
+                    <button key={s.id} aria-pressed={style === s.id} onClick={() => void setPrefs({ reportStyle: s.id })}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

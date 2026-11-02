@@ -71,6 +71,12 @@ export class TauriBackend implements Backend {
   writeStore(name: StoreName, value: unknown) {
     return call<void>('store_write', { name, value })
   }
+  acquireRunLock() {
+    return call<boolean>('run_lock_acquire')
+  }
+  releaseRunLock() {
+    return call<void>('run_lock_release')
+  }
 }
 
 export class TauriAi implements AiHost {

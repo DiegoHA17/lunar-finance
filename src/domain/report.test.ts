@@ -1,11 +1,12 @@
-import { PDFDocument, StandardFonts } from 'pdf-lib'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { renderReportPdf } from '../infra/pdfRender'
+import { PDFDict, PDFDocument, PDFName } from 'pdf-lib'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { renderReportPdf, standardFonts } from '../infra/pdfRender'
 import { blocking, cat, index, mov, withCategory } from '../test/factories'
 import { addDays } from './dates'
 import { formatEUR } from './money'
 import { type LaidOutPage, type Measure, PAGE, layoutReport } from './pdf/layout'
 import { toWinAnsi } from './pdf/text'
+import { CLASSIC, VINTAGE } from './pdf/theme'
 import { customPeriod, monthPeriod, quarterPeriod, yearPeriod } from './periods'
 import { buildReport } from './report'
 import { summarize } from './stats'
@@ -17,10 +18,7 @@ const ctx = { demo: false, dataComplete: true, lastSyncAt: '2026-10-19T08:00:00Z
 
 let measure: Measure
 beforeAll(async () => {
-  const doc = await PDFDocument.create()
-  const r = await doc.embedFont(StandardFonts.Helvetica)
-  const b = await doc.embedFont(StandardFonts.HelveticaBold)
-  measure = { width: (t, s, bold) => (bold ? b : r).widthOfTextAtSize(t, s) }
+  measure = standardFonts(await PDFDocument.create()).measure
 })
 
 /** Año sintético: ~1,3 movimientos por día con importes con céntimos. */
@@ -42,6 +40,25 @@ function syntheticYear(year: number): Movement[] {
 
 function texts(page: LaidOutPage): string[] {
   return page.ops.flatMap((o) => (o.t === 'text' ? [o.text] : []))
+}
+
+/** Ningún elemento de contenido invade el pie ni ningún texto se sale de los márgenes. */
+function expectWithinPage(pages: LaidOutPage[]) {
+  for (const p of pages) {
+    for (const o of p.ops) {
+      if (o.t === 'text' && /^Página \d+ de \d+$/.test(o.text)) continue
+      const bottom = o.t === 'rect' ? o.y + o.h : o.t === 'line' ? Math.max(o.y1, o.y2) : o.t === 'circle' ? o.y + o.r : o.y
+      const top = o.t === 'line' ? Math.min(o.y1, o.y2) : o.y
+      const isFooter = top >= PAGE.height - 50
+      if (!isFooter) expect(bottom).toBeLessThanOrEqual(PAGE.height - PAGE.bottom + 0.01)
+      if (o.t === 'text') {
+        const w = measure.width(o.text, o.size, o.bold, o.face)
+        const left = o.align === 'right' ? o.x - w : o.align === 'center' ? o.x - w / 2 : o.x
+        expect(left).toBeGreaterThanOrEqual(PAGE.marginX - 0.5)
+        expect(left + w).toBeLessThanOrEqual(PAGE.width - PAGE.marginX + 0.5)
+      }
+    }
+  }
 }
 
 describe('informe y PDF', () => {
@@ -66,51 +83,43 @@ describe('informe y PDF', () => {
     expect(allTexts).toContain(toWinAnsi(formatEUR(t.balanceCents, { signed: true })))
   })
 
-  it('pagina con cabecera, pie y «Página X de N» en todas las páginas', () => {
-    const pages = layoutReport(buildReport(all, idx, period, 'full', ctx), idx, measure)
-    expect(pages.length).toBeGreaterThan(10)
-    pages.forEach((p, i) => {
-      expect(texts(p)).toContain(`Página ${i + 1} de ${pages.length}`)
-      expect(texts(p)).toContain('Lunar Finance')
+  describe.each([CLASSIC, VINTAGE])('paginación con el estilo $style', (theme) => {
+    const pages = () => layoutReport(buildReport(all, idx, period, 'full', ctx), idx, measure, { theme })
+
+    it('pagina con cabecera, pie y «Página X de N» en todas las páginas', () => {
+      const list = pages()
+      expect(list.length).toBeGreaterThan(10)
+      list.forEach((p, i) => {
+        expect(texts(p)).toContain(`Página ${i + 1} de ${list.length}`)
+        expect(texts(p).map((t) => t.toLowerCase())).toContain('lunar finance')
+      })
     })
-  })
 
-  it('ningún elemento de contenido invade el pie ni se sale de la página', () => {
-    const pages = layoutReport(buildReport(all, idx, period, 'full', ctx), idx, measure)
-    for (const p of pages) {
-      for (const o of p.ops) {
-        if (o.t === 'text' && /^Página \d+ de \d+$/.test(o.text)) continue
-        const bottom = o.t === 'rect' ? o.y + o.h : o.t === 'line' ? Math.max(o.y1, o.y2) : o.t === 'circle' ? o.y + o.r : o.y
-        const top = o.t === 'line' ? Math.min(o.y1, o.y2) : o.y
-        const isFooter = top >= PAGE.height - 50
-        if (!isFooter) expect(bottom).toBeLessThanOrEqual(PAGE.height - PAGE.bottom + 0.01)
-        if (o.t === 'text') {
-          const w = measure.width(o.text, o.size, o.bold)
-          const left = o.align === 'right' ? o.x - w : o.align === 'center' ? o.x - w / 2 : o.x
-          expect(left).toBeGreaterThanOrEqual(PAGE.marginX - 0.5)
-          expect(left + w).toBeLessThanOrEqual(PAGE.width - PAGE.marginX + 0.5)
-        }
+    it('ningún elemento de contenido invade el pie ni se sale de la página', () => {
+      expectWithinPage(pages())
+    })
+
+    it('las filas de totales nunca quedan solas al principio de una página', () => {
+      const list = pages()
+      for (const label of ['Balance del periodo', 'Total gasto neto', 'Total ingresos']) {
+        const pageIdx = list.findIndex((p) => texts(p).includes(label))
+        expect(pageIdx).toBeGreaterThanOrEqual(0)
+        const page = list[pageIdx]
+        const totalOp = page.ops.find((o) => o.t === 'text' && o.text === label) as Extract<(typeof page.ops)[number], { t: 'text' }>
+        // Debe haber al menos una fila de datos (zebra o texto) por encima en la misma página, después de la cabecera.
+        const rowsAbove = page.ops.filter((o) => o.t === 'text' && o.y < totalOp.y && o.y > PAGE.top + 10 && o.size === theme.table.size)
+        expect(rowsAbove.length).toBeGreaterThan(0)
       }
-    }
-  })
+    })
 
-  it('las filas de totales nunca quedan solas al principio de una página', () => {
-    const pages = layoutReport(buildReport(all, idx, period, 'full', ctx), idx, measure)
-    for (const label of ['Balance del periodo', 'Total gasto neto', 'Total ingresos']) {
-      const pageIdx = pages.findIndex((p) => texts(p).includes(label))
-      expect(pageIdx).toBeGreaterThanOrEqual(0)
-      const page = pages[pageIdx]
-      const totalOp = page.ops.find((o) => o.t === 'text' && o.text === label) as Extract<(typeof page.ops)[number], { t: 'text' }>
-      // Debe haber al menos una fila de datos (zebra o texto) por encima en la misma página, después de la cabecera.
-      const rowsAbove = page.ops.filter((o) => o.t === 'text' && o.y < totalOp.y && o.y > PAGE.top + 10 && o.size === 8.5)
-      expect(rowsAbove.length).toBeGreaterThan(0)
-    }
-  })
+    it('repite la cabecera de la tabla de movimientos en cada página', () => {
+      const withRows = pages().filter((p) => texts(p).some((t) => /^\d{2}\/\d{2}\/2026$/.test(t)))
+      for (const p of withRows) expect(texts(p)).toContain('DESCRIPCIÓN')
+    })
 
-  it('repite la cabecera de la tabla de movimientos en cada página', () => {
-    const pages = layoutReport(buildReport(all, idx, period, 'full', ctx), idx, measure)
-    const withRows = pages.filter((p) => texts(p).some((t) => /^\d{2}\/\d{2}\/2026$/.test(t)))
-    for (const p of withRows) expect(texts(p)).toContain('DESCRIPCIÓN')
+    it('no hay páginas sin contenido', () => {
+      for (const p of pages()) expect(p.ops.some((o) => o.t === 'text' && o.y > PAGE.top - 10 && o.y < PAGE.height - PAGE.bottom)).toBe(true)
+    })
   })
 
   it('el resumen ejecutivo no incluye el listado de movimientos', () => {
@@ -236,3 +245,100 @@ describe('logotipo en el PDF', () => {
     expect(layoutReport(report, idx, measure)[0].ops.filter((o) => o.t === 'circle').length).toBeGreaterThan(0)
   })
 })
+
+describe('estilo Vintage', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const longCat = cat('Suscripciones, servicios digitales y otras cuotas periódicas con nombre larguísimo')
+  const archived = cat('Antigua categoría', { status: 'archived' })
+  const xIdx = index([...cats, longCat, archived])
+  /** Casos extremos: importes millonarios, balance negativo, emojis, nombres larguísimos, transferencias y exclusiones. */
+  const extreme = [
+    withCategory(mov({ description: 'Compra de vivienda 🏠 con descripción muy, muy larga que no cabe en la columna', euros: 1234567.89, date: '2026-10-02' }), cats[3]),
+    withCategory(mov({ description: 'Nómina', euros: 987654.32, kind: 'income', date: '2026-10-28' }), cats[4]),
+    withCategory(mov({ description: 'Cuota', euros: 0.01, date: '2026-10-03' }), longCat),
+    withCategory(mov({ description: 'Devolución', euros: 0.5, kind: 'refund', date: '2026-10-03' }), longCat),
+    withCategory(mov({ description: 'Gasto antiguo', euros: 3, date: '2026-10-04' }), archived),
+    mov({ description: '', euros: 7, date: '2026-10-05' }),
+    mov({ description: 'Traspaso a ahorro', euros: 500, kind: 'transfer', date: '2026-10-06' }),
+    mov({ description: 'Sin importe', amountCents: null, issues: [blocking()], date: '2026-10-07' }),
+  ]
+  const scenarios = [
+    ['pequeño', [withCategory(mov({ euros: 12.5, date: '2026-10-01' }), cats[0])], monthPeriod(2026, 10), 'full'],
+    ['grande', syntheticYear(2026), yearPeriod(2026), 'full'],
+    ['vacío', syntheticYear(2026), monthPeriod(2030, 1), 'full'],
+    ['extremo', extreme, monthPeriod(2026, 10), 'full'],
+    ['extremo resumido', extreme, monthPeriod(2026, 10), 'summary'],
+  ] as const
+
+  /** Textos del cuerpo (sin encabezado, pie ni etiquetas de cabecera de tabla, que se repiten por página). */
+  function content(pages: LaidOutPage[]): string[] {
+    return pages.flatMap((p) =>
+      p.ops.flatMap((o) => (o.t === 'text' && o.y > PAGE.top - 10 && o.y < PAGE.height - PAGE.bottom && !(o.size === 7.5 && o.bold) ? [o.text.toUpperCase()] : [])),
+    )
+  }
+
+  it.each(scenarios)('informe %s: los mismos importes, categorías, periodos y totales que el clásico', (_, list, p, detail) => {
+    const report = buildReport([...list], xIdx, p, detail, ctx)
+    const classic = layoutReport(report, xIdx, measure, { theme: CLASSIC })
+    const vintage = layoutReport(report, xIdx, measure, { theme: VINTAGE })
+    // Los textos recortados con «…» pueden cortar en otro punto (otra fuente); se comparan aparte.
+    const whole = (t: string[]) => t.filter((x) => !x.endsWith('…'))
+    expect(whole(content(vintage))).toEqual(whole(content(classic)))
+    expect(content(vintage).filter((x) => x.endsWith('…')).length).toBe(content(classic).filter((x) => x.endsWith('…')).length)
+  })
+
+  it.each(scenarios)('informe %s: ningún importe se recorta y nada se sale de la página', (_, list, p, detail) => {
+    for (const theme of [CLASSIC, VINTAGE]) {
+      const pages = layoutReport(buildReport([...list], xIdx, p, detail, ctx), xIdx, measure, { theme })
+      expectWithinPage(pages)
+      const amounts = pages.flatMap(texts).filter((t) => t.includes('€'))
+      expect(amounts.length).toBeGreaterThan(0)
+      for (const a of amounts) expect(a.endsWith('…')).toBe(false)
+    }
+  })
+
+  it('las cifras clave del extremo aparecen completas en ambos estilos', () => {
+    const report = buildReport(extreme, xIdx, monthPeriod(2026, 10), 'full', ctx)
+    const t = report.summary.totals
+    for (const theme of [CLASSIC, VINTAGE]) {
+      const all = layoutReport(report, xIdx, measure, { theme }).flatMap(texts)
+      for (const v of [formatEUR(t.incomeCents), formatEUR(t.netExpenseCents), formatEUR(t.balanceCents), formatEUR(t.balanceCents, { signed: true })]) expect(all).toContain(toWinAnsi(v))
+    }
+  })
+
+  it('genera un PDF válido, con fondo marfil y solo fuentes estándar sin incrustar, sin conexión', async () => {
+    vi.stubGlobal('fetch', () => {
+      throw new Error('sin red')
+    })
+    const { readFileSync } = await import('node:fs')
+    const logo = new Uint8Array(readFileSync(new URL('../assets/brand/lunar-logo-64.png', import.meta.url)))
+    const report = buildReport(all2026, idx, yearPeriod(2026), 'full', ctx)
+    const bytes = await renderReportPdf(report, idx, logo, VINTAGE)
+    expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe('%PDF-')
+    const loaded = await PDFDocument.load(bytes)
+    expect(loaded.getPageCount()).toBe(layoutReport(report, idx, measure, { logo: true, theme: VINTAGE }).length)
+    const fonts = loaded.context
+      .enumerateIndirectObjects()
+      .map(([, o]) => o)
+      .filter((o): o is PDFDict => o instanceof PDFDict && o.get(PDFName.of('Type')) === PDFName.of('Font'))
+    expect(fonts.map((f) => String(f.get(PDFName.of('BaseFont')))).sort()).toEqual(['/Courier', '/Courier-Bold', '/Times-Bold', '/Times-Roman'])
+    for (const f of fonts) expect(f.get(PDFName.of('FontDescriptor'))).toBeUndefined()
+  })
+
+  it('el estilo no altera el modelo del informe', async () => {
+    const report = buildReport(all2026, idx, yearPeriod(2026), 'full', ctx)
+    const before = structuredClone(report)
+    await renderReportPdf(report, idx, undefined, VINTAGE)
+    expect(report).toEqual(before)
+  })
+
+  it('el clásico sigue siendo el estilo predeterminado', async () => {
+    const { DEFAULT_PREFS } = await import('../state/store')
+    expect(DEFAULT_PREFS.reportStyle).toBe('classic')
+    const report = buildReport(all2026, idx, yearPeriod(2026), 'summary', ctx)
+    expect(layoutReport(report, idx, measure)).toEqual(layoutReport(report, idx, measure, { theme: CLASSIC }))
+  })
+})
+
+const all2026 = syntheticYear(2026)

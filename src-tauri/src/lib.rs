@@ -43,11 +43,14 @@ pub fn run() {
                 write_lock: std::sync::Mutex::new(()),
                 ollama_url: ai::ollama::DEFAULT_URL.to_string(),
                 ai_pull: std::sync::Mutex::new(None),
+                run_lock: std::sync::Mutex::new(None),
             });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::credentials_status,
+            commands::run_lock_acquire,
+            commands::run_lock_release,
             commands::credentials_set,
             commands::credentials_clear,
             commands::config_get,

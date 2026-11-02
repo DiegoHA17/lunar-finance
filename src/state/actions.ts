@@ -7,6 +7,8 @@ import { CategoryIndex } from '../domain/categories'
 import type { CategoryDraft, SuggestedCategory } from '../domain/categories'
 import type { Rule } from '../domain/classifier/rules'
 import type { Period } from '../domain/periods'
+import type { PlanItem, RecurringDoc } from '../domain/recurring'
+import { isReportStyle } from '../domain/pdf/theme'
 import type { Category, Movement } from '../domain/types'
 import type { AiHost, Backend, Host } from '../infra/backend'
 import { type AppConfig, LunarError, type PageDto } from '../infra/contracts'
@@ -18,10 +20,11 @@ import { type Correction, type CorrectionOutcome, applyCorrections } from '../se
 import { type ApplyOutcome, type PreviewItem, applyProposals } from '../services/classification'
 import * as migrationSvc from '../services/migration'
 import * as movementsSvc from '../services/movements'
+import * as recurringSvc from '../services/recurring'
 import * as rulesSvc from '../services/rules'
 import { OllamaProvider, aggregatePull, chooseModel } from '../services/ai'
 import { loadAll, remapMovements } from '../services/sync'
-import { DEFAULT_PREFS, type DataMode, EMPTY_DATA, type Preferences, type Screen, type Toast, store } from './store'
+import { DEFAULT_PREFS, type DataMode, EMPTY_DATA, EMPTY_RECURRING_STATE, type Preferences, type RecurringState, type Screen, type Toast, store } from './store'
 
 let host: Host = new BrowserHost()
 let native: Backend | null = null
@@ -74,6 +77,7 @@ function parsePrefs(raw: unknown): Preferences {
       enabled: p.ai?.enabled === true,
       model: typeof p.ai?.model === 'string' && p.ai.model.length <= 100 ? p.ai.model : null,
     },
+    reportStyle: isReportStyle(p.reportStyle) ? p.reportStyle : 'classic',
   }
 }
 
@@ -128,7 +132,7 @@ export async function switchMode(mode: DataMode) {
     toast({ kind: 'info', message: 'Notion solo está disponible en la aplicación de escritorio.' })
     return
   }
-  store.set({ mode, data: EMPTY_DATA, rules: [], rulesNotice: null })
+  store.set({ mode, data: EMPTY_DATA, rules: [], rulesNotice: null, recurring: EMPTY_RECURRING_STATE })
   await setPrefs({ mode, welcomed: true })
   await reloadSetup()
   if (isReady()) await refresh()
@@ -176,7 +180,10 @@ export async function refresh() {
   } catch (e) {
     if (seq !== loadSeq) return
     store.set((s) => ({ data: { ...s.data, status: 'error', error: LunarError.from(e) } }))
+    return
   }
+  // Al abrir y al sincronizar: se registran los pagos periódicos automáticos ya vencidos.
+  if (seq === loadSeq) await processRecurring({ auto: true })
 }
 
 async function loadRulesFor(b: Backend, index: CategoryIndex) {
@@ -205,6 +212,171 @@ function mergeMovementPages(pages: PageDto[]) {
   for (const p of pages) map.set(p.id, p)
   const movements = remapMovements(map, s.config, new CategoryIndex(s.data.categories))
   store.set({ data: { ...s.data, pages: map, movements } })
+}
+
+// ── Pagos periódicos ──────────────────────────────────────────────────────────────────────────────────────────
+
+function setRecurring(patch: Partial<RecurringState>) {
+  store.set((s) => ({ recurring: { ...s.recurring, ...patch } }))
+}
+
+function currentPlan(doc: RecurringDoc) {
+  const s = store.get()
+  return recurringSvc.buildPlan(doc, recurringSvc.planData(s.data), s.config)
+}
+
+/**
+ * Concilia con los datos de Notion recién cargados y registra: con `auto`, las ocurrencias automáticas vencidas;
+ * con `approve`, las que el usuario ha confirmado (solo si siguen igual que cuando las vio). Nunca registra con
+ * datos desactualizados o incompletos.
+ *
+ * El backend, la configuración y los datos se capturan una vez: si el usuario cambia entre Notion y demostración
+ * durante la operación, todo (Notion y registro local) sigue yendo al mismo backend y no se toca el estado nuevo.
+ */
+async function processRecurring(opts: { auto: boolean; approve?: PlanItem[] }): Promise<void> {
+  const mode = store.get().mode
+  const b = backend()
+  const sameMode = () => store.get().mode === mode
+  setRecurring({ busy: true })
+  try {
+    await recurringSvc.withRecurringLock(b, async () => {
+      const doc = await recurringSvc.loadRecurring(b)
+      const s = store.get()
+      if (!sameMode()) return
+      if (s.data.status !== 'ready') {
+        setRecurring({ doc, plan: null, error: null })
+        return
+      }
+      const data = recurringSvc.planData(s.data)
+      let plan = recurringSvc.buildPlan(doc, data, s.config)
+      if (recurringSvc.applyFound(doc, plan, new Date().toISOString())) {
+        await recurringSvc.saveRecurring(b, doc)
+        plan = recurringSvc.buildPlan(doc, data, s.config)
+      }
+      const approved = recurringSvc.selectApproved(plan, opts.approve ?? [])
+      const todo = plan.blocked ? [] : [...(opts.auto ? plan.items.filter((it) => it.action === 'auto') : []), ...approved.todo]
+      let outcomes: recurringSvc.RegisterOutcome[] = []
+      if (todo.length > 0) {
+        const ctx = { backend: b, config: s.config, index: data.index, pages: s.data.pages }
+        outcomes = await recurringSvc.registerOccurrences(ctx, doc, todo, (d) => recurringSvc.saveRecurring(b, d))
+      }
+      if (!sameMode()) return
+      const pages = outcomes.flatMap((o) => (o.page ? [o.page] : []))
+      if (pages.length) mergeMovementPages(pages)
+      setRecurring({ doc, plan: currentPlan(doc), error: null })
+      reportOutcomes(outcomes)
+      if (approved.changed > 0) {
+        toast({ kind: 'info', message: 'Algún pago ha cambiado al volver a leer Notion y no se ha registrado.', hint: 'Revísalo de nuevo en «Pendientes de registrar».' }, 9000)
+      }
+    })
+  } catch (e) {
+    if (sameMode()) setRecurring({ error: LunarError.from(e) })
+  } finally {
+    setRecurring({ busy: false })
+  }
+}
+
+function reportOutcomes(outcomes: recurringSvc.RegisterOutcome[]) {
+  const created = outcomes.filter((o) => o.page).length
+  if (created > 0) toast({ kind: 'success', message: `${created === 1 ? '1 pago periódico registrado' : `${created} pagos periódicos registrados`}${savedWhere()}.` })
+  const failed = outcomes.find((o) => o.error)
+  if (!failed?.error) return
+  if (failed.uncertain) {
+    toast(
+      {
+        kind: 'error',
+        message: 'No consta si Notion registró un pago periódico.',
+        hint: 'Se comprobará en la próxima sincronización; si no aparece en Notion, se te pedirá revisarlo. No se repetirá solo.',
+      },
+      12000,
+    )
+  } else toastError(failed.error, 'No se registró el pago periódico')
+}
+
+/** Registra las ocurrencias confirmadas por el usuario (tal como las vio) después de volver a leer Notion. */
+export async function approveOccurrences(items: PlanItem[]): Promise<void> {
+  const mode = store.get().mode
+  await refresh()
+  const s = store.get()
+  if (s.mode !== mode || s.data.status !== 'ready' || s.data.error) return
+  await processRecurring({ auto: false, approve: items })
+}
+
+/**
+ * Modifica el documento local en exclusiva y recalcula lo pendiente (sin registrar nada). El catálogo y la
+ * configuración se capturan al empezar, junto con el backend.
+ */
+async function mutateRecurring(fn: (doc: RecurringDoc, ctx: { index: CategoryIndex; config: AppConfig }) => void, success?: string): Promise<boolean> {
+  const mode = store.get().mode
+  const b = backend()
+  const ctx = { index: currentIndex(), config: store.get().config }
+  try {
+    await recurringSvc.withRecurringLock(b, async () => {
+      const doc = await recurringSvc.loadRecurring(b)
+      if (store.get().mode !== mode) return
+      fn(doc, ctx)
+      await recurringSvc.saveRecurring(b, doc)
+      if (store.get().mode !== mode) return
+      setRecurring({ doc, plan: store.get().data.status === 'ready' ? currentPlan(doc) : null, error: null })
+    })
+    if (success) toast({ kind: 'success', message: success })
+    return true
+  } catch (e) {
+    toastError(e, 'No se guardó el pago periódico')
+    return false
+  }
+}
+
+export function saveRecurringRule(input: recurringSvc.RecurringInput, id: string | null): Promise<boolean> {
+  return mutateRecurring(
+    (doc, { index }) => {
+      const error = recurringSvc.validateRecurringInput(input, id ? (doc.rules.find((r) => r.id === id) ?? null) : null, doc, index)
+      if (error) throw new LunarError({ code: 'validation', message: error })
+      recurringSvc.upsertRule(doc, input, id, new Date().toISOString())
+    },
+    id ? 'Pago periódico actualizado.' : 'Pago periódico creado.',
+  )
+}
+
+export function setRecurringActive(id: string, active: boolean): Promise<boolean> {
+  return mutateRecurring((doc) => recurringSvc.setRuleActive(doc, id, active, new Date().toISOString()), active ? 'Pago periódico reanudado.' : 'Pago periódico en pausa.')
+}
+
+export function deleteRecurringRule(id: string): Promise<boolean> {
+  return mutateRecurring((doc) => recurringSvc.deleteRule(doc, id), 'Pago periódico eliminado. Los movimientos ya registrados no se han modificado.')
+}
+
+export function skipOccurrences(items: PlanItem[]): Promise<boolean> {
+  return mutateRecurring((doc) => recurringSvc.skipOccurrences(doc, items, new Date().toISOString()))
+}
+
+export function relinkRecurring(): Promise<boolean> {
+  return mutateRecurring((doc, { config }) => recurringSvc.relinkDataSource(doc, config), 'Pagos periódicos vinculados a la base de movimientos actual.')
+}
+
+/** Lee el documento local (al abrir la pantalla) sin registrar nada. */
+export async function loadRecurringState(): Promise<void> {
+  const mode = store.get().mode
+  try {
+    const doc = await recurringSvc.loadRecurring(backend())
+    if (store.get().mode !== mode) return
+    setRecurring({ doc, plan: store.get().data.status === 'ready' ? currentPlan(doc) : null, error: null })
+  } catch (e) {
+    setRecurring({ doc: null, plan: null, error: LunarError.from(e) })
+  }
+}
+
+export async function applyRecurrenceMigration(): Promise<boolean> {
+  try {
+    const config = await migrationSvc.applyRecurrenceProperty(backend(), store.get().config)
+    store.set({ config })
+    toast({ kind: 'success', message: `Propiedad «${migrationSvc.RECURRENCE_PROPERTY_NAME}» añadida en Notion.` })
+    await refresh()
+    return true
+  } catch (e) {
+    toastError(e, 'No se aplicó el cambio')
+    return false
+  }
 }
 
 export function movementById(id: string): Movement | undefined {

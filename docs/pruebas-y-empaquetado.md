@@ -40,7 +40,7 @@ Prueba real contra Ollama (con el servicio en marcha y el modelo instalado):
 cd src-tauri && cargo test -- --ignored real_ollama --nocapture
 ```
 
-PDF de muestra con los datos de demostración, para revisarlos a ojo:
+PDF de muestra con los datos de demostración, en cada estilo (`classic-*.pdf` y `vintage-*.pdf`), para revisarlos a ojo:
 
 ```bash
 LUNAR_SAMPLE_PDF=./muestras npx vitest run src/test/samplePdf.test.ts

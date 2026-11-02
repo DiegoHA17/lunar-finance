@@ -1,4 +1,4 @@
-import { ArrowLeftRight, FileText, LayoutDashboard, RefreshCw, Settings, Tags, WandSparkles } from 'lucide-react'
+import { ArrowLeftRight, CalendarSync, FileText, LayoutDashboard, RefreshCw, Settings, Tags, WandSparkles } from 'lucide-react'
 import logo from '../assets/brand/lunar-logo-64.png'
 import { cx } from '../ui/cx'
 import { formatInstant } from '../domain/dates'
@@ -12,6 +12,7 @@ const NAV: { id: Screen; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'movements', label: 'Movimientos', icon: ArrowLeftRight },
   { id: 'categories', label: 'Categorías', icon: Tags },
   { id: 'rules', label: 'Reglas', icon: WandSparkles },
+  { id: 'recurring', label: 'Pagos periódicos', icon: CalendarSync },
   { id: 'reports', label: 'Informes', icon: FileText },
 ]
 
@@ -24,7 +25,7 @@ function Logo() {
   )
 }
 
-function NavButton({ id, label, icon: Icon, badge }: { id: Screen; label: string; icon: typeof LayoutDashboard; badge?: number }) {
+function NavButton({ id, label, icon: Icon, badge, badgeLabel }: { id: Screen; label: string; icon: typeof LayoutDashboard; badge?: number; badgeLabel?: string }) {
   const active = useApp((s) => s.screen) === id
   return (
     <button
@@ -39,7 +40,7 @@ function NavButton({ id, label, icon: Icon, badge }: { id: Screen; label: string
       <Icon size={17} strokeWidth={active ? 2.1 : 1.8} aria-hidden className="shrink-0" />
       <span className="flex-1 max-[960px]:hidden">{label}</span>
       {badge ? (
-        <span className="num rounded-full bg-accent-soft px-1.5 text-[11.5px] text-accent max-[960px]:hidden" aria-label={`${badge} pendientes de clasificar`}>
+        <span className="num rounded-full bg-accent-soft px-1.5 text-[11.5px] text-accent max-[960px]:hidden" aria-label={`${badge} ${badgeLabel}`}>
           {badge}
         </span>
       ) : null}
@@ -52,12 +53,18 @@ export function Sidebar() {
   const mode = useApp((s) => s.mode)
   const ready = useApp(() => isReady())
   const pending = data.movements.filter((m) => isCounted(m) && needsClassification(m)).length
+  const toConfirm = useApp((s) => s.recurring.plan?.items.filter((i) => i.action === 'manual').length ?? 0)
   return (
     <nav aria-label="Navegación principal" className="flex w-[212px] shrink-0 flex-col gap-1 border-r border-line bg-sidebar px-3 pt-5 pb-3 max-[960px]:w-[64px] max-[960px]:px-2">
       <Logo />
       <div className="mt-6 flex flex-col gap-0.5">
         {NAV.map((n) => (
-          <NavButton key={n.id} {...n} badge={n.id === 'movements' ? pending : undefined} />
+          <NavButton
+            key={n.id}
+            {...n}
+            badge={n.id === 'movements' ? pending : n.id === 'recurring' ? toConfirm : undefined}
+            badgeLabel={n.id === 'movements' ? 'pendientes de clasificar' : 'pagos por confirmar'}
+          />
         ))}
       </div>
       <div className="mt-auto flex flex-col gap-2">

@@ -8,6 +8,7 @@ import type { Host } from '../infra/backend'
 import { LunarError } from '../infra/contracts'
 import logoUrl from '../assets/brand/lunar-logo-64.png'
 import { renderReportPdf } from '../infra/pdfRender'
+import { PDF_THEMES, type ReportStyle } from '../domain/pdf/theme'
 
 async function logoBytes(): Promise<Uint8Array | undefined> {
   try {
@@ -17,10 +18,10 @@ async function logoBytes(): Promise<Uint8Array | undefined> {
   }
 }
 
-export async function exportReportPdf(host: Host, model: ReportModel, index: CategoryIndex): Promise<string | null> {
+export async function exportReportPdf(host: Host, model: ReportModel, index: CategoryIndex, style: ReportStyle = 'classic'): Promise<string | null> {
   let bytes: Uint8Array
   try {
-    bytes = await renderReportPdf(model, index, await logoBytes())
+    bytes = await renderReportPdf(model, index, await logoBytes(), PDF_THEMES[style])
   } catch (e) {
     throw new LunarError({ code: 'internal', message: 'No se pudo generar el PDF.', detail: e instanceof Error ? e.message : String(e) })
   }

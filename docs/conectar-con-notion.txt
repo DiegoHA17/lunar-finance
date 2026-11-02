@@ -1,0 +1,66 @@
+LUNAR FINANCE - CÓMO CONECTARLO CON NOTION
+Versión 0.2.1 · Desarrollado por Diego Herrera Ayuso
+
+Necesitas: Lunar Finance instalado y tu base de datos de gastos en Notion
+(la que rellena el atajo «Gasto» del iPhone). Son unos 5 minutos.
+
+
+1. CREAR LA INTEGRACIÓN EN NOTION
+   - Abre https://www.notion.so/profile/integrations
+   - Crea una integración nueva de tipo «Interna», con un nombre
+     (por ejemplo «Lunar Finance»), en el espacio de trabajo donde está
+     tu base de datos de gastos.
+   - En «Capacidades», activa:
+       Leer contenido · Actualizar contenido · Insertar contenido
+   - Copia el «Internal Integration Secret» (empieza por ntn_).
+     Trátalo como una contraseña: no lo compartas.
+
+2. COMPARTIR LA BASE DE DATOS CON LA INTEGRACIÓN  (imprescindible)
+   - Abre tu base de datos de gastos en Notion.
+   - Menú «···» (arriba a la derecha) → Conexiones → busca la integración
+     → confirma.
+   - Sin este paso Notion responde «404 object_not_found» aunque el token
+     sea correcto.
+
+3. GUARDAR EL TOKEN EN LUNAR FINANCE
+   - Ajustes → Conexión con Notion → pega el secreto → «Guardar token».
+   - Se guarda en el almacén seguro del sistema (en Windows, el
+     Administrador de credenciales). No se escribe en ningún archivo.
+
+4. ELEGIR LA BASE DE DATOS
+   - Ajustes → Base de datos de movimientos → «Ver bases de datos
+     compartidas» → «Elegir».
+     (También puedes pegar el enlace de la base de datos y pulsar
+     «Usar este enlace».)
+   - Revisa la asignación de propiedades. Lunar Finance la propone sola:
+     Descripción, Fecha, Categoría, Tipo, Cantidad y Método de Pago.
+   - Indica qué significa cada valor de «Tipo» (gasto, ingreso,
+     devolución o transferencia).
+   - Pulsa «Guardar y leer datos».
+
+5. COMPROBAR
+   - Ajustes → Diagnóstico → «Ejecutar diagnóstico».
+   - Todos los pasos deben salir en verde y aparecer «Conexión correcta».
+
+
+OPCIONAL
+   - Catálogo de categorías: Categorías → crear el catálogo en Notion.
+     Antes, comparte con la integración la página donde quieras crearlo.
+   - IA local para proponer categorías: Ajustes → Inteligencia artificial
+     (necesita Ollama; todo se procesa en tu equipo).
+   - En Linux hace falta un servicio de llavero (GNOME Keyring o KWallet)
+     para guardar el token.
+
+
+SI ALGO FALLA
+   404 «no encuentra el recurso»  → falta el paso 2, o el enlace es de una
+                                    vista enlazada: usa la base de datos
+                                    original.
+   401 «ha rechazado el token»    → copia de nuevo el secreto (paso 1) y
+                                    guárdalo otra vez.
+   403 «no tiene permiso»         → revisa las capacidades del paso 1.
+   Movimientos «fuera de los      → les falta fecha o importe, o su «Tipo»
+   totales»                         no está asignado (paso 4).
+
+Lunar Finance no tiene servidor propio: lee y escribe solo en tu Notion y
+nunca cambia un movimiento sin que lo confirmes.
